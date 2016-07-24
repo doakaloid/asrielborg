@@ -15,8 +15,6 @@ var bot;
 log.notice("AsrielBorg is now loading ... This might take a while if your lines file is too big.");
 
 var config = {
-    //The port for the web admin panel.
-    admin_port: 10991,
     //Discord API Token
     token: "",
     //The chance that the bot will reply to any message, in percent.
