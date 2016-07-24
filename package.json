@@ -1,0 +1,26 @@
+{
+  "name": "asrielborg.js",
+  "version": "0.0.0",
+  "description": "AsrielBorg for JavaScript",
+  "main": "./main.js",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "discord.js": "^8.0.0",
+    "fs": "0.0.2",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndroFox/asrielborg.git"
+  },
+  "author": "AndroFox",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AndroFox/asrielborg/issues"
+  },
+  "homepage": "https://github.com/AndroFox/asrielborg#readme"
+}
