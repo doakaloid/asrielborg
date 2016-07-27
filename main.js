@@ -52,11 +52,7 @@ try {
     });
 }
 
-function validateconf(data) { 
-    assert((typeof data.admin_port     === "number" 
-                && data.admin_port > 0 
-                && data.admin_port <= 65565
-           ));
+function validateconf(data) {
     assert((typeof data.token          === "string"));
     assert((typeof data.replyrate      === "number"
                 && data.replyrate >= 0 
