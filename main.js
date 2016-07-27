@@ -84,22 +84,22 @@ function validateconf(data) {
 
 function loadlines() {
     //Does the lines file already exist? Default is lines.txt.
-    try {
-        fs.readFile(lines_path, (err, data) => {
-            if (err) throw err;
-            
-            known_lines = data.toString().replace(/(\r)/gm,"").split("\n");
-            known_words = unique(data.toString().replace(/(\r)/gm,"").split(/\n| /));
-            log.notice(`I know ${known_lines.length} lines and ${known_words.length} unique words.`);
-            connect();
-        });
-    } catch (err) {
-        fs.writeFile(lines_path, "", (err) => {
+	if (!fs.existsSync(lines_path)) {
+		fs.writeFile(lines_path, "", (err) => {
             if (err) { return console.log(`Could not write to ${lines_path}. ${err}`); }
             log.notice(`Created new ${lines_path}.`);
             connect();
         });
-    }
+	}
+	
+	fs.readFile(lines_path, (err, data) => {
+		if (err) throw err;
+		
+		known_lines = data.toString().replace(/(\r)/gm,"").split("\n");
+		known_words = unique(data.toString().replace(/(\r)/gm,"").split(/\n| /));
+		log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
+		connect();
+	});
 }
 
 function connect() {
@@ -126,7 +126,7 @@ function connect() {
 
 function process_message(message_t) {
     if (config.speaking) {
-        var message = message_t.content;
+        var message = message_t.content.toLowerCase();
         var words = message.split(' ');
         
         if (config.learning) { learn(message); }
@@ -189,7 +189,7 @@ function reply(message_t) {
 }
 
 function learn(message) {
-    var filterlines = message.split('. ');
+    var filterlines = message.toLowerCase().split('. ');
     
     filterlines.forEach( (sentence) => {
         if (known_lines.indexOf(sentence) > -1) { return false; } //if the sentence is already found in lines
