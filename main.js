@@ -95,8 +95,9 @@ function loadlines() {
 	fs.readFile(lines_path, (err, data) => {
 		if (err) throw err;
 		
-		known_lines = data.toString().replace(/(\r)/gm,"").split("\n");
-		known_words = unique(data.toString().replace(/(\r)/gm,"").split(/\n| /));
+		var lowercase_data = data.toString().toLowerCase();
+		known_lines = lowercase_data.replace(/(\r)/gm,"").split("\n");
+		known_words = unique(lowercase_data.split(/\n| /));
 		log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
 		connect();
 	});
@@ -127,6 +128,7 @@ function connect() {
 function process_message(message_t) {
     if (config.speaking) {
         var message = message_t.content.toLowerCase();
+		
         var words = message.split(' ');
         
         if (config.learning) { learn(message); }
@@ -160,7 +162,7 @@ function process_message(message_t) {
 }
 
 function reply(message_t) {
-    var message = message_t.content;
+    var message = message_t.content.toLowerCase();
     var words = message.split(' ');
     
     //search for words that the bot already knows 
@@ -189,8 +191,8 @@ function reply(message_t) {
 }
 
 function learn(message) {
-    var filterlines = message.toLowerCase().split('. ');
-    
+    var filterlines = message.split('. ');
+	
     filterlines.forEach( (sentence) => {
         if (known_lines.indexOf(sentence) > -1) { return false; } //if the sentence is already found in lines
         var words = sentence.split(' ');
@@ -256,9 +258,9 @@ RegExp.quote = function(str) {
 };
 
 //Assist function
-function containsCaseInsensitive(array1, element) {
+function containsCaseInsensitive(array1, element_) {
     return array1.some( function (el, i) { 
-        if (el.toLowerCase() === element.toLowerCase()) {
+        if (el.toLowerCase() === element_.toLowerCase()) {
             return true;
         }
     });
