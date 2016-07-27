@@ -77,7 +77,9 @@ function validateconf(data) {
            ));
     assert((typeof data.magicwords === "string"));
 
-    data.magicwords = data.magicwords.toLowerCase().split(' ');
+    data.magicwords = data.magicwords
+						  .toLowerCase()
+						  .split(' ');
     config = data;
     loadlines();
 }
@@ -95,8 +97,17 @@ function loadlines() {
 	fs.readFile(lines_path, (err, data) => {
 		if (err) throw err;
 		
-		known_lines = data.toString().replace(/(\r)/gm,"").split("\n");
-		known_words = unique(data.toString().replace(/(\r)/gm,"").split(/\n| /));
+		var filterdata = data.toString()
+							 .toLowerCase()
+							 .replace(/(\r)/gm,"")
+		
+		known_lines = filterdata.split(/(\n|\. )/)
+								.filter((el) => {
+									return el !== "\n"; //remove all the new lines
+								});
+						  
+		known_words = unique(filterdata.split(/\n| /));
+		
 		log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
 		connect();
 	});
@@ -113,6 +124,7 @@ function connect() {
     
     bot.on("message", (message_t) => {
         if (message_t.author != bot.user) {
+			log.message(message_t.author, message_t.channel, message_t.content);
             process_message(message_t);
         }
     });
@@ -127,7 +139,8 @@ function connect() {
 function process_message(message_t) {
     if (config.speaking) {
         var message = message_t.content.toLowerCase();
-        var words = message.split(' ');
+		
+        var words = message.split(/ |\\n/);
         
         if (config.learning) { learn(message); }
         
@@ -148,10 +161,16 @@ function process_message(message_t) {
             if (contains_magic().length > 0 && replychance < config.replymagic ) { replyflag = true; }
     
             //check if the bot will reply to nick
-            else if (containsCaseInsensitive(words, bot.user.username) && replychance < config.replynick) { replyflag = true; }
+            else if (containsCaseInsensitive(words, bot.user.username) 
+					 && replychance < config.replynick
+					) {  
+						replyflag = true;
+					} 
 
             //check if the bot will reply to default chance
-            else if (replychance < config.replyrate) { replyflag = true; }
+            else if (replychance < config.replyrate) { 
+				replyflag = true;
+			}
             if (replyflag) {
                 reply(message_t);
             }
@@ -160,7 +179,7 @@ function process_message(message_t) {
 }
 
 function reply(message_t) {
-    var message = message_t.content;
+    var message = message_t.content.toLowerCase();
     var words = message.split(' ');
     
     //search for words that the bot already knows 
@@ -179,20 +198,31 @@ function reply(message_t) {
         
         //fill left
         var randomline = get_random_line_containing(picked_word);
-        form_sentence.unshift(randomline.split(re).splice(0, 1).join(re));
+		
+        form_sentence.unshift(randomline.split(re)
+										.splice(0, 1)
+										.join(re)
+							 );
         //fill right
         var randomline = get_random_line_containing(picked_word);
-        form_sentence.push(randomline.split(re).splice(-1, 1).join(re));
+        form_sentence.push(randomline.split(re)
+									 .splice(-1, 1)
+									 .join(re)
+						  );
         
         bot.sendMessage(message_t.channel, form_sentence.join(''));
     }
 }
 
 function learn(message) {
-    var filterlines = message.toLowerCase().split('. ');
-    
+    var filterlines = message.split(/\. |\n/);
+	
     filterlines.forEach( (sentence) => {
-        if (known_lines.indexOf(sentence) > -1) { return false; } //if the sentence is already found in lines
+		//if the sentence is already found in lines
+        if (known_lines.indexOf(sentence) > -1) { 
+			return false; 
+		}
+		
         var words = sentence.split(' ');
         words.forEach( (word) => {
             if (known_words.indexOf(word) == -1) {
@@ -256,9 +286,9 @@ RegExp.quote = function(str) {
 };
 
 //Assist function
-function containsCaseInsensitive(array1, element) {
+function containsCaseInsensitive(array1, element_) {
     return array1.some( function (el, i) { 
-        if (el.toLowerCase() === element.toLowerCase()) {
+        if (el.toLowerCase() === element_.toLowerCase()) {
             return true;
         }
     });
