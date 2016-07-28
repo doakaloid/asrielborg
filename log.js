@@ -15,5 +15,9 @@ module.exports = {
     
     error: function (msg) {
         console.log(`${`[ERROR]`.red.bold} ${msg.red}`);
-    }
+    },
+	
+	message: function (author, channel, msg) {
+		console.log(`[${channel.name}]: <${author.username}> ${msg}`)
+	}
 }
