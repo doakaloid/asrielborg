@@ -215,7 +215,7 @@ function reply(message_t) {
 }
 
 function learn(message) {
-    var filterlines = message.split(/. |\n/);
+    var filterlines = message.split(/\. |\n/);
 	
     filterlines.forEach( (sentence) => {
 		//if the sentence is already found in lines
