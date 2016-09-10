@@ -3,8 +3,11 @@ var Discord = require("discord.js");
 var fs = require('fs');
 var assert = require('assert');
 var _ = require('underscore');
+
+//asrielborg.js modules
 var log = require('./log');
 
+//you can change the paths here, for whatever reason
 var config_path = "./config.json";
 var lines_path = "./lines.txt";
 
@@ -12,9 +15,11 @@ var known_lines = [];
 var known_words = [];
 var bot;
 
-log.notice("AsrielBorg is now loading ... This might take a while if your lines file is too big.");
+log.notice("AsrielBorg Version 2 is now loading ... This might take a while if your lines file is too big.");
 
 var config = {
+    //The port the panel will run in.
+    port: 10991,
     //Discord API Token
     token: "",
     //The chance that the bot will reply to any message, in percent.
@@ -53,8 +58,12 @@ try {
 }
 
 function validateconf(data) {
-    assert((typeof data.token          === "string"));
-    assert((typeof data.replyrate      === "number"
+    assert((typeof data.port === "number"
+                && data.port >= 1
+                && data.port <= 65565
+           ));
+    assert((typeof data.token === "string"));
+    assert((typeof data.replyrate === "number"
                 && data.replyrate >= 0 
                 && data.replyrate <= 100
            ));
@@ -62,14 +71,14 @@ function validateconf(data) {
                 && data.replynick >= 0 
                 && data.replynick <= 100
            ));
-    assert((typeof data.replymagic     === "number" 
+    assert((typeof data.replymagic === "number" 
                 && data.replymagic >= 0 
                 && data.replymagic <= 100
            ));
-    assert((typeof data.speaking       === "number"
+    assert((typeof data.speaking === "number"
                && (data.speaking == 0 || data.speaking == 1)
            ));
-    assert((typeof data.learning       === "number"
+    assert((typeof data.learning === "number"
                && (data.learning == 0 || data.learning == 1)
            ));
     assert((typeof data.autosaveperiod === "number"
@@ -116,7 +125,7 @@ function loadlines() {
 function connect() {
     bot = new Discord.Client();
     
-    bot.loginWithToken(config.token);
+	bot.login(config.token);
     
     bot.on("ready", () => {
         log.notice("Successfully connected to Discord.");
@@ -129,8 +138,8 @@ function connect() {
         }
     });
     
-    bot.on("messageDeleted", (message_t) => {
-        bot.sendMessage(message_t.channel, `${message_t.author}: i know what you did`);
+    bot.on("messageDelete", (message_t) => {
+        message_t.channel.sendMessage(`${message_t.author}: i know what you did`);
     });
     
     setInterval(save_lines, config.autosaveperiod * 1000);
@@ -210,7 +219,7 @@ function reply(message_t) {
 									 .join(re)
 						  );
         
-        bot.sendMessage(message_t.channel, form_sentence.join(''));
+        message_t.channel.sendMessage(form_sentence.join(''));
     }
 }
 
@@ -238,7 +247,7 @@ function save_lines() {
         if (err) {
             return log.error(`Could not write to ${lines_path}. ${err}`);
         }
-        log.notice(`Saved lines to ${lines_path}.`);
+        log.notice(`Saved lines at ${Date()}.`);
     });
 }
 
