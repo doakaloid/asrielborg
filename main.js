@@ -1,27 +1,27 @@
 "use strict"
-var Discord = require("discord.js");
-var fs = require('fs');
-var assert = require('assert');
-var _ = require('underscore');
+const Discord = require("discord.js");
+const fs = require('fs');
+const assert = require('assert');
+const _ = require('underscore');
 
 //asrielborg.js modules
-var log = require('./log');
+const log = require('./log');
 
 //you can change the paths here, for whatever reason
-var config_path = "./config.json";
-var lines_path = "./lines.txt";
+const config_path = "./config.json";
+const lines_path = "./lines.txt";
 
 var known_lines = [];
 var known_words = [];
 var bot;
 
-log.notice("AsrielBorg Version 2 is now loading ... This might take a while if your lines file is too big.");
+log.notice("AsrielBorg Version 1.0.1 is now loading ... This might take a while if your lines file is too big.");
 
 var config = {
-    //The port the panel will run in.
-    port: 10991,
+    //The port the panel will run in. TODO
+    //port: 10991,
     //Discord API Token
-    token: "",
+    token: "YOUR TOKEN HERE",
     //The chance that the bot will reply to any message, in percent.
     replyrate: 1.0,
     //The chance that the bot will reply when its nick is mentioned, in percent.
@@ -38,6 +38,8 @@ var config = {
     autosaveperiod: 200,
     //The list of magic words the bot will reply to (separated by spaces)
     magicwords: "this will trigger me",
+    //The list of words that will make the bot not learn a sentence if it contains one of these words
+    blacklistedwords: "very bad word"
 };
 
 //Does a config file already exist? Default is config.json.
@@ -45,7 +47,7 @@ try {
     fs.accessSync(config_path, fs.FS_OK);
     fs.readFile(config_path, (err, data) => {
         if (err) throw err;
-    validateconf( JSON.parse(data) );
+        validateconf( JSON.parse(data) );
     });
 } catch (err) {
     //Config file doesn't exist or is not accessible. Attempt creating a new one.
@@ -58,64 +60,82 @@ try {
 }
 
 function validateconf(data) {
-    assert((typeof data.port === "number"
-                && data.port >= 1
-                && data.port <= 65565
-           ));
+    //assert((typeof data.port === "number" //TODO
+    //            && data.port >= 1
+    //            && data.port <= 65565
+    //       ));
+    
     assert((typeof data.token === "string"));
+    
     assert((typeof data.replyrate === "number"
                 && data.replyrate >= 0 
                 && data.replyrate <= 100
            ));
+    
     assert((typeof data.replynick      === "number"
                 && data.replynick >= 0 
                 && data.replynick <= 100
            ));
+    
     assert((typeof data.replymagic === "number" 
                 && data.replymagic >= 0 
                 && data.replymagic <= 100
            ));
+    
     assert((typeof data.speaking === "number"
                && (data.speaking == 0 || data.speaking == 1)
            ));
+    
     assert((typeof data.learning === "number"
                && (data.learning == 0 || data.learning == 1)
            ));
+    
     assert((typeof data.autosaveperiod === "number"
                 && data.autosaveperiod >= 0
            ));
+    
     assert((typeof data.magicwords === "string"));
-
     data.magicwords = data.magicwords
 						  .toLowerCase()
 						  .split(' ');
+    
+    assert((typeof data.blacklistedwords === "string" || data.blacklistedwords === undefined));
+    if (data.blacklistedwords === undefined) {
+        data.blacklistedwords = [];
+    } else {
+        data.blacklistedwords = data.blacklistedwords
+                                    .toLowerCase()
+                                    .split(' ');
+    }
+    
     config = data;
     loadlines();
 }
 
 function loadlines() {
-    //Does the lines file already exist? Default is lines.txt.
+    //Attempt loading the lines file.
 	if (!fs.existsSync(lines_path)) {
 		fs.writeFile(lines_path, "", (err) => {
-            if (err) { return console.log(`Could not write to ${lines_path}. ${err}`); }
+            if (err) {
+                return console.log(`Could not write to ${lines_path}. ${err}`);
+            }
             log.notice(`Created new ${lines_path}.`);
-            connect();
+            connect(); //Loading was successful; connect to server.
         });
 	}
-	
 	fs.readFile(lines_path, (err, data) => {
 		if (err) throw err;
 		
-		var filterdata = data.toString()
+		let filtereddata = data.toString()
 							 .toLowerCase()
 							 .replace(/(\r)/gm,"")
 		
-		known_lines = filterdata.split(/(\n|\. )/)
+		known_lines = filtereddata.split(/(\n|\. )/)
 								.filter((el) => {
 									return el !== "\n"; //remove all the new lines
 								});
 						  
-		known_words = unique(filterdata.split(/\n| /));
+		known_words = unique(getWords(filtereddata));
 		
 		log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
 		connect();
@@ -147,49 +167,50 @@ function connect() {
 
 function process_message(message_t) {
     if (config.speaking) {
-        var message = message_t.content.toLowerCase();
+        let message = message_t.content.toLowerCase();
 		
-        var words = message.split(/ |\\n/);
+        let words = getWords(message);
         
-        if (config.learning) { learn(message); }
+        if (config.learning) {
+            learn(message);
+        }
         
         if (config.speaking) {
-            var replychance = Math.floor(Math.random() * 100);
-            var replyflag = false;
+            let replyflag = false;
 
             //check if the bot will reply to a magic word
-            var contains_magic = function () {
+            let contains_magic = function () {
                 var matching_words = [];
                 config.magicwords.forEach( (magic_word) => {
                     if (containsCaseInsensitive(words, magic_word)) {
                         matching_words.push(magic_word);
                     }
                 });
-                return matching_words;
+                return matching_words.length > 0;
             }
-            if (contains_magic().length > 0 && replychance < config.replymagic ) { replyflag = true; }
-    
+            if (contains_magic() && Math.floor(Math.random() * 100) < config.replymagic ) { 
+                replyflag = true;
+            }
             //check if the bot will reply to nick
-            else if (containsCaseInsensitive(words, bot.user.username) 
-					 && replychance < config.replynick
-					) {  
+            else if (containsCaseInsensitive(words, bot.user.username)
+                     && Math.floor(Math.random() * 100) < config.replynick) {  
 						replyflag = true;
 					} 
-
             //check if the bot will reply to default chance
-            else if (replychance < config.replyrate) { 
+            else if (Math.floor(Math.random() * 100) < config.replyrate) { 
 				replyflag = true;
 			}
+            
             if (replyflag) {
-                reply(message_t);
+                reply_to(message_t);
             }
         }
     }
 }
 
-function reply(message_t) {
+function reply_to(message_t) {
     var message = message_t.content.toLowerCase();
-    var words = message.split(' ');
+    var words = getWords(message);
     
     //search for words that the bot already knows 
     var known = [];
@@ -224,21 +245,37 @@ function reply(message_t) {
 }
 
 function learn(message) {
-    var filterlines = message.split(/\. |\n/);
+    var filterlines = message.toLowerCase()
+                             .split(/\. |\n/);
 	
+    let prohibited = false; //Flag that determines whether the sentence contains a blacklisted word
+    if (config.blacklistedwords.length > 0) {
+        filterlines.forEach( (sentence) => {
+            let words = sentence.split(/[\n\.\!\,\;\:\(\)\ \r]/)
+            words.forEach( (word) => {
+                if (config.blacklistedwords.indexOf(word) != -1) {
+                    log.notice(`Refusing to learn sentence containing blacklisted word "${word}".`);
+                    prohibited = true;
+                }
+            });
+        });
+    }
+    if (prohibited) { return false; }
+    
     filterlines.forEach( (sentence) => {
-		//if the sentence is already found in lines
-        if (known_lines.indexOf(sentence) > -1) { 
+        if (known_lines.indexOf(sentence) > -1) {
+            //Sentence already found in lines.
 			return false; 
-		}
-		
-        var words = sentence.split(' ');
+        }
+        known_lines.push(sentence);
+        
+        let words = getWords(sentence);
         words.forEach( (word) => {
             if (known_words.indexOf(word) == -1) {
-                words.push(word);
+                //If word is not known, add word to vocabulary.
+                known_words.push(word);
             }
         });
-        known_lines.push(sentence);
     });
 }
   
@@ -309,4 +346,9 @@ function chooseFrom(array1) {
         return [];
     } 
     return array1[Math.floor(Math.random() * array1.length)];
+}
+
+//Assist function
+function getWords(line) {
+    return line.split(/[\.\!\,\;\:\(\)\ \?]/);
 }

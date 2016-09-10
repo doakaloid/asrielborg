@@ -1,6 +1,6 @@
 AsrielBorg is a clone of SeeBorg, an IRC (Internet Relay Chat) bot created by Eugene Bujak in C++. AsrielBorg is written to work with Discord and Node.js 6.5.0. AsrielBorg is a bot that can learn from other users and formulate responses according to the contexts that the bot already knows. It is not coherent most of the time, but it does provide for some good entertainment.
 
-**IF YOU ARE UPDATING TO 2.0.0, YOU MUST INSTALL NODE.JS 6.5.0**
+**IF YOU ARE UPDATING FROM 1.0.0, YOU MUST INSTALL NODE.JS 6.5.0**
 
 ### Installation
    1. Install Node.js 6.5.0: (Download: https://nodejs.org/en/)
