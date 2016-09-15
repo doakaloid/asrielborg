@@ -1,0 +1,95 @@
+<html>
+<head>
+    <script type="text/javascript" src='/scripts/socket.io-1.4.5.js'></script>  
+    <script type='text/javascript' src=/scripts/jquery-3.1.0.min.js></script>
+
+    <title>AsrielBorg Control Panel</title>
+    
+    <!-- Read cookie script -->
+    <script type="text/javascript">
+        function readCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for(var i=0;i < ca.length;i++) {
+                var c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
+        }
+    </script>
+</head>
+<body>
+    <table id='usertable'></table>
+
+    <script type="text/javascript">
+        'use strict'
+        let token = readCookie('token');
+        
+        //If there is no token, you must go back to the main page
+        //to login again and get a new one.
+        if (typeof token === 'null') {
+            window.location.href = '/';
+        }
+        else {
+            var socket = io.connect('', {
+                query: 'token=' + token
+            });
+
+            socket.on('connect', function () {
+                // Nothing happens here.
+            });
+
+            socket.on('update_token', function (data) {
+                'use strict'
+                token = data.token;
+
+                let date = new Date();
+                date.setTime(date.getTime() + (12 * 60 * 60 * 1000));
+                
+                document.cookie = `token=${token}; expires=${date.toGMTString()}; path=/`
+            });
+            
+            socket.on('error', function (data) {
+                if (data.message) {
+                    alert("Connection closed. " + data.message);
+                } else {
+                    alert("Connection closed. Reason unknown.");
+                }
+                
+                document.cookie = 'token=;Path=/;expires Thu, 01 Jan 1970 00:00:01 GMT;'
+                window.location.href = '/';
+            });
+
+            socket.on('invalid_token', function (data) {
+                if (data.message) {
+                    alert("Connection closed. " + data.message);
+                } else {
+                    alert("Connection closed. Reason unknown.");
+                }
+                
+                document.cookie = 'token=;Path=/;expires Thu, 01 Jan 1970 00:00:01 GMT;'
+                window.location.href = '/';
+            })
+            
+            socket.on('connect_timeout', function() {
+               alert('The connection has timed out.'); 
+            });
+
+            socket.on('user_list', function(data) {
+                "use strict"
+                let online_users = data;
+                $("#usertable").html("<tr><td>Username</td><td>IP Address</td></tr>"); // Empty the user list to receive a new one.
+                online_users.forEach(function (user) {
+                    let row  = document.getElementById("usertable")
+                                       .insertRow();
+                    let nickname_cell   = row.insertCell(0);
+                    let ip_address_cell = row.insertCell(1);
+                    nickname_cell.innerHTML   = user.nickname;
+                    ip_address_cell.innerHTML = user.ip_address;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
