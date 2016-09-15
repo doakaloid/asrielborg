@@ -1,0 +1,76 @@
+<html>
+    
+<head>
+<script type='text/javascript' src=/scripts/jquery-3.1.0.min.js></script>
+<title>AsrielBorg Panel Login</title>
+</head>
+    
+<body>
+    <% if (locals.password_set) { %>
+        <p>Please enter the password to proceed into the administration panel.</p>
+        <p class="warning"></p>
+        <form id="login" name="login_form">
+            Nickname: <input type="text" name="login_name"><br>
+            Password: <input type="password" name="login_input">
+            <input type="submit">
+        </form>
+    <% } else { %>
+        <p>Welcome to AsrielBorg Panel page. Please enter a new password to continue.</p>
+        <p class="warning"></p>
+        <form id="makepassword">
+            <input type=password name="new_password">
+        </form>
+    <% } %>
+
+    <% if (locals.password_set) { %>
+    <script type="text/javascript">
+        $(function() {
+            $("#login").submit( function (e) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/',
+                    data: $('#login').serialize(),
+                    success: function (res) {
+                        if (res.success_state) {
+                            //This is your current session's token.
+                            //Do not share it with anybody or they may gain access to your session.
+                            var token = res.token;
+                            
+                            var date = new Date();
+                            date.setTime(date.getTime() + (12 * 60 * 60 * 1000));
+                            
+                            document.cookie = `token=${token}; expires=${date.toGMTString()}; path=/`
+                            window.location = '/panel';
+                        } else {
+                            $(".warning").text("Message from server: " + res.message);
+                        }
+                    }
+                });
+                e.preventDefault();
+            });
+        });
+    </script>
+    <% } else { %>
+        <script type="text/javascript">
+            $(function() {
+                $("#makepassword").submit( function (e) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/',
+                        data: $("#makepassword").serialize(),
+                        success: function (res) {
+                            if (res.success_state) {
+                                location.reload();
+                            } else {
+                                $(".warning").text("Message from server: " + res.message);
+                            }
+                        }
+                    });
+                    e.preventDefault();
+                });
+            });
+        </script>
+    <% } %>
+</body>
+    
+</html>
