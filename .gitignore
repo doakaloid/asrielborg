@@ -1,3 +1,5 @@
 config.json
 password_hash
 lines.txt
+.idea/*
+.gitignore

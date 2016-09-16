@@ -1,17 +1,16 @@
-"use strict"
+"use strict";
 
-const Discord = require("discord.js");
+const Discord = require('discord.js');
 const fs = require('fs');
 const assert = require('assert');
-const _ = require('underscore');
 
 // Asrielborg's modules
 const log = require('./log');
 const server = require('./server');
 
 // You can change the paths here, for whatever reason.
-const config_path = "./config.json";
-const lines_path = "./lines.txt";
+const config_path = './config.json';
+const lines_path = './lines.txt';
 
 var known_lines = [];
 var known_words = [];
@@ -21,50 +20,70 @@ log.notice("Check for updates! They can be found at https://git.io/via60");
 log.notice("AsrielBorg Version 2.0.0 is now loading... This might take a while if your lines file is too big.");
 
 var config = {
-    port: 10991,                        // TODO: The port the panel will run in.
+    port: 10991,                        // The port the panel will run in.
     token: "YOUR TOKEN HERE",           // Discord API Token
 
     replyrate: 1.0,                     // The chance that the bot will reply to any message, in percent.
     replynick: 100.0,                   // The chance that the bot will reply when its nick is mentioned, in percent.
     replymagic: 10.0,                   // The chance that the bot will reply when a magic word is said, in percent.
-    
+
     speaking: 1,                        // Whether the bot is speaking or not. (0: not learning, 1: learning)
     learning: 1,                        // Whether the bot is learning or not. (0: not learning, 1: learning)
-    
+
     autosaveperiod: 200,                // Auto save period (in seconds)
-    
+
     magicwords: "this will trigger me", // The list of magic words the bot will reply to (separated by spaces)
-    blacklisted_words: "very bad word"   // The list of words that will make the bot not learn a sentence if it contains one of these words
+    blacklisted_words: "very bad word"  // The list of words that will make the bot not learn a sentence if it contains one of these words
 };
 
 module.exports = {
-    set_option: function(setting, value) {
-        if (setting === 'replyrate' || setting === 'replynick' || setting === 'replymagic') {
-            if (value >= 0 && value <= 100) {
-                config[setting] = value;
+    set_option: function (options, value) {
+        options.forEach( (option) => {
+            if (option === 'replyrate' || option === 'replynick' || option === 'replymagic') {
+                if (value >= 0 && value <= 100) {
+                    config[option] = value;
+                }
+            } else if (option === 'speaking' || options === 'learning') {
+                if (value === 0 || value === 1) {
+                    config[option] = value;
+                }
+            } else if (option === 'autosaveperiod') {
+                if (value > 0) {
+                    config[option] = value;
+                }
+            } else if (option === 'magicwords' || option === 'blacklisted_words') {
+                config[option] = value.toLowerCase()
+                                       .trim()
+                                       .split(' ');
             }
-        } else if (setting === 'speaking' || settings === 'learning') {
-            if (value == 0 || value == 1) {
-                config[setting] = value;
-            }
-        } else if (setting === 'autosaveperiod') {
-            if (value > 0) {
-                config[setting] = value;
-            }
-        } else if (setting === 'magicwords' || setting === 'blacklisted_words') {
-            config[setting] = value.toLowerCase()
-                                   .trim()
-                                   .split(' ');
-        }
+        });
+    },
+    get_option: function (options) {
+        return options.map(option => config[option]);
+    },
+    get_all_options: function () {
+        return {
+            replyrate: config.replyrate,
+            replynick: config.replynick,
+            replymagic: config.replymagic,
+
+            speaking: config.speaking,
+            learning: config.learning,
+
+            autosaveperiod: config.autosaveperiod,
+
+            magicwords: config.magicwords,
+            blacklisted_words: config.blacklisted_words,
+        };
     }
-}
+};
 
 // Does a config file already exist? Attempting to load from config_path.
 try {
     fs.accessSync(config_path, fs.FS_OK);
     fs.readFile(config_path, (err, data) => {
-        if (err) throw err;
-        validateconf( JSON.parse(data) );
+        if (err) { throw err; }
+        validate_config( JSON.parse(data) );
     });
 } catch (err) {
     // Config file doesn't exist or is not accessible. Attempt creating a new one.
@@ -91,47 +110,26 @@ try {
  * {String} magicwords          - The list of magic words the bot will reply to (separated by spaces).
  * {String} blacklisted_words    - (Optional) The list of words that will make the bot not learn a sentence if it contains one of these words
  */
-function validateconf(data) {
-    assert((typeof data.port === 'number'
-                && data.port >= 1
-                && data.port <= 65536
-           ));
-    
+function validate_config(data) {
+    assert((typeof data.port  === 'number' && data.port >= 1 && data.port <= 65535));
     assert((typeof data.token === 'string'));
-    
-    assert((typeof data.replyrate === 'number'
-                && data.replyrate >= 0 
-                && data.replyrate <= 100
-           ));
-    
-    assert((typeof data.replynick      === 'number'
-                && data.replynick >= 0 
-                && data.replynick <= 100
-           ));
-    
-    assert((typeof data.replymagic === 'number'
-                && data.replymagic >= 0 
-                && data.replymagic <= 100
-           ));
-    
-    assert((typeof data.speaking === 'number'
-               && (data.speaking == 0 || data.speaking == 1)
-           ));
-    
-    assert((typeof data.learning === 'number'
-               && (data.learning == 0 || data.learning == 1)
-           ));
-    
-    assert((typeof data.autosaveperiod === 'number'
-                && data.autosaveperiod >= 0
-           ));
-    
+    //
+    assert((typeof data.replyrate === 'number' && data.replyrate >= 0 && data.replyrate <= 100));
+    assert((typeof data.replynick === 'number' && data.replynick >= 0 && data.replynick <= 100));
+    assert((typeof data.replymagic === 'number' && data.replymagic >= 0 && data.replymagic <= 100));
+    //
+    assert((typeof data.speaking === 'number' && (data.speaking === 0 || data.speaking === 1)));
+    //
+    assert((typeof data.learning === 'number' && (data.learning === 0 || data.learning === 1)));
+    //
+    assert((typeof data.autosaveperiod === 'number' && data.autosaveperiod >= 0 ));
+    //
     assert((typeof data.magicwords === 'string'));
     data.magicwords = data.magicwords
-						  .toLowerCase()
+                          .toLowerCase()
                           .trim()
-						  .split(' ');
-    
+                          .split(' ');
+    //
     assert((typeof data.blacklisted_words === "string" || data.blacklisted_words === undefined));
     if (data.blacklisted_words === undefined) {
         data.blacklisted_words = [];
@@ -141,39 +139,37 @@ function validateconf(data) {
                                      .trim()
                                      .split(' ');
     }
-    
     config = data; // Save the configuration into memory.
-    loadlines();
+    load_lines();
 }
 
 /**
  * Load the file in lines_path.
  * If the file doesn't exist, it will create a new one and then call connect().
- * If the file does exit, 
+ * If the file does exit,
  */
-function loadlines() {
-	if (!fs.existsSync(lines_path)) {
-		fs.writeFile(lines_path, "", (err) => {
-            if (err) {
-                return console.log(`Could not write to ${lines_path}. ${err}`);
+function load_lines() {
+    if (!fs.existsSync(lines_path)) {
+        fs.writeFile(lines_path, "", (err) => {
+            if (!err) {
+                log.notice(`Created new ${lines_path}.`);
+                connect(); // Loading was successful; connect to server.
+            } else {
+                console.log(`Could not write to ${lines_path}. ${err}`);
             }
-            log.notice(`Created new ${lines_path}.`);
-            connect(); // Loading was successful; connect to server.
         });
-	}
-	fs.readFile(lines_path, (err, data) => {
-		if (err) throw err;
-		
+    }
+    fs.readFile(lines_path, (err, data) => {
+        if (err) { throw err; }
         // data: the file's contents turned into lowercase, with all the carriage returns removed.
-		data = data.toString()
-				   .toLowerCase()
-				   .replace(/\r/gm,'')
-		
-		known_lines = data.split(/(\n|\. )/)
-						  .filter((el) => {
-								return el !== "\n"; // Remove all the unnecessary line breaks.
-                           });
-						  
+        data = data.toString()
+                   .toLowerCase()
+                   .replace(/\r/gm,'');
+
+		known_lines = data.split(/(\n|\.\ )/)
+                          .filter((el) => {
+                              return el !== "\n"; // Remove all the unnecessary line breaks.
+                          });
 		known_words = unique(get_words(data));
 		
 		log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
@@ -185,7 +181,7 @@ function loadlines() {
  * Connects to Discord using the discord.js API.
  */
 function connect() {
-    var bot_server = server.server_start(config.port);
+    server.server_start(config.port);
 
     bot = new Discord.Client();
 	bot.login(config.token);
@@ -195,8 +191,8 @@ function connect() {
     });
 
     bot.on("message", (message_t) => {
-        if (message_t.author != bot.user) {
-			log.message(message_t.author, message_t.channel, message_t.content);
+        log.message(message_t.author, message_t.channel, message_t.content);
+        if (message_t.author !== bot.user) {
             process_message(message_t);
         }
     });
@@ -235,14 +231,13 @@ function process_message(message_t) {
                     }
                 });
                 return matching_words.length > 0;
-            }
+            };
 
             let chance = Math.floor(Math.random() * 100);
 
-            if (   (contains_magic() && chance <= config.replymagic) // Magic word check
-                || (contains_case_insensitive(words, bot.user.username) && chance <= config.replynick) // Reply to nick check
-                || (chance <= config.replyrate) // Default reply check
-               ) {
+            if ((contains_magic() && chance <= config.replymagic) ||                                   // Magic word check
+                (contains_case_insensitive(words, bot.user.username) && chance <= config.replynick) || // Reply to nick check
+                (chance <= config.replyrate)) {                                                        // Default reply check
                 reply_to(message_t);
 			}
         }
@@ -258,32 +253,32 @@ function reply_to(message_t) {
     let message_words = get_words(message);
     
     let recognized = []; // Array of words that the bot recognizes in the message.
-    message_words.forEach( (word, i, arr) => {
+    message_words.forEach( (word) => {
         if (known_words.indexOf(word) > -1) {
             recognized.push(word); // 
         }
     });
-    
+
     if (recognized.length > 0) {
-        let picked_word   = choose_from(recognized); // Pick a random word from the recognized words to start building a sentence from there.
-        let output_msg = [picked_word];          // 
-        
+        let picked_word = choose_from(recognized); // Pick a random word from the recognized words to start building a sentence from there.
+        let output_msg = [picked_word];            //
+
         let re = new RegExp(`\\b${RegExp.quote(picked_word)}\\b`, "gi"); // This expression matches the picked word.
-        
+
         // Start filling the output message from the left.
         let random_line = get_random_line_containing(picked_word);
         output_msg.unshift(random_line.split(re)     //
-									  .splice(0, 1)
-									  .join(re)
-                          );
-        
+            .splice(0, 1)
+            .join(re)
+        );
+
         // Start filling the output message from the right.
         random_line = get_random_line_containing(picked_word);
         output_msg.push(random_line.split(re)
-								   .splice(-1, 1)
-								   .join(re)
-						  );
-        
+            .splice(-1, 1)
+            .join(re)
+        );
+
         message_t.channel.sendMessage(output_msg.join(''));
     }
 }
@@ -299,14 +294,14 @@ function learn(message) {
     let prohibited_words = []; // Flag that determines whether the sentence contains a blacklisted word
     if (config.blacklisted_words.length > 0) {
         config.blacklisted_words.forEach((el) => {
-            if (message_words.indexOf(el) != -1) {
+            if (message_words.indexOf(el) !== -1) {
                 // Word in message matches a blacklisted word.
                 prohibited_words.push(el);
             }
         });
     }
     if (prohibited_words.length > 0) {
-        log.notice(`Refusing to learn message containing blacklisted words: ${prohibited_words.join(', ')}`)
+        log.notice(`Refusing to learn message containing blacklisted words: ${prohibited_words.join(', ')}`);
     }
     
     filtered_message.forEach( (sentence) => {
@@ -317,7 +312,7 @@ function learn(message) {
         known_lines.push(sentence);
         
         message_words.forEach( (word) => {
-            if (known_words.indexOf(word) == -1) {
+            if (known_words.indexOf(word) === -1) {
                 // Word is not known; add word to vocabulary.
                 known_words.push(word);
             }
@@ -333,7 +328,7 @@ function save_lines() {
         if (err) {
             return log.error(`Could not write to ${lines_path}. ${err}`);
         }
-        log.notice(`Saved lines at ${Date()}.`);
+        log.notice(`Saved lines at ${new Date()}.`);
     });
 }
 
@@ -360,10 +355,10 @@ function get_random_line_containing(word) {
  * @return {Array} - The processed array.
  */
 function unique(array) {
-    var dict = {};
-    var i;
-    var l = array.length;
-    var r = [];
+    let dict = {};
+    let i;
+    let l = array.length;
+    let r = [];
     for (i = 0; i < l; i += 1) {
         dict[array[i]] = array[i]; 
     }
@@ -414,5 +409,5 @@ function choose_from(array_) {
  * @return {Array} - The array containing the words of the string.
  */
 function get_words(line) {
-    return line.split(/[\.\!\,\;\:\(\)\ \?]/);
+    return line.split(/[.!,;:()? ]/);
 }

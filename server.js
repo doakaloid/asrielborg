@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const fs          = require('fs');
 const express     = require('express');
@@ -13,6 +13,7 @@ const cookie_parser = require('cookie-parser');
 
 const log  = require('./log' );
 const User = require('./user');
+const Bot = require('./main');
 
 const PASSWORD_PATH   = './password_hash';
 const JWT_SECRET      = crypto.randomBytes(1024);
@@ -36,7 +37,7 @@ function load_password() {
     try {
         fs.accessSync(PASSWORD_PATH, fs.FS_OK);
         fs.readFile(PASSWORD_PATH, (err, data) => {
-            if (err) throw err;
+            if (err) { throw err; }
             log.notice('Loaded password successfully.');
             
             if (data.toString() === '') {
@@ -49,10 +50,10 @@ function load_password() {
         fs.writeFile(PASSWORD_PATH, '', (err) => {
             if (err) {
                 log.error(`Could not write to ${PASSWORD_PATH}. Please check your permissions and try again.`);
-                sys.exit(1);
+                throw err;
             }
             else {
-                log.notice(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`)
+                log.notice(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`);
             }
         });
     }
@@ -67,7 +68,7 @@ function write_password(password) {
     fs.writeFile(PASSWORD_PATH, password, (err) => {
         if (err) {
             log.error(`Could not write to ${PASSWORD_PATH}. Please check your permissions and try again.`);
-            sys.exit(1);
+            throw err;
         }
         log.notice("Password updated.");
     });
@@ -99,7 +100,7 @@ module.exports = {
         app.use(body_parser.json());
         app.use(body_parser.urlencoded({ extended: true }));
         app.use(cookie_parser());
-        
+
         app.use(express.static('static'));
         
         app.get('/', (req, res) => {
@@ -122,7 +123,7 @@ module.exports = {
                 let new_password = req.body.new_password;
 
                 let success_state = false;
-                let message = "An error ocurred.";
+                let message = "An error occurred.";
 
                 if (this.password_hash !== '') {
                     //There is already a password.
@@ -215,7 +216,7 @@ module.exports = {
             log.panel("Server is now running.");
         });
     }
-}
+};
 
 //Socket.IO stuff here.
 var user_list   = [];
@@ -230,6 +231,7 @@ function print_online_users() {
 /**
  * Produces a token for panel authentication.
  * @param {String} nick - The nickname to be used by the authenticated user.
+ * @param {String} ip_address - The ip_address of the user.
  */
 function make_token(nick, ip_address) {
     let user_profile = {
@@ -241,8 +243,7 @@ function make_token(nick, ip_address) {
 
     user_list.push(new User(user_profile));
 
-    let signed_token = jwt.sign(user_profile, JWT_SECRET, { expiresIn: 60 * 60 }); // Expires in 1 hour
-    return signed_token;
+    return jwt.sign(user_profile, JWT_SECRET, { expiresIn: 60 * 60 }); // Expires in 1 hour
 }
 
 /**
@@ -291,20 +292,20 @@ function get_online_users() {
  *      - If the provided user has the same name as another user;
  *      - AND if that user is online;
  *      - AND if that user DOES NOT have the same user_id as the provided user.
- * @param {User|String}
+ * @param {User|String} username
  * @return {Boolean}
  */
 function is_username_taken(username) {
     if (typeof username === 'string') {
 
-        let lowercased_name = username.toLowerCase();
+        let lowercase_name = username.toLowerCase();
         return user_list.find( function (el) { 
-            return ((el.profile.nickname.toLowerCase() === lowercased_name) && (el.status === 'online'));
+            return ((el.profile.nickname.toLowerCase() === lowercase_name) && (el.status === 'online'));
         });
     } else if (username instanceof User) {
-        let lowercased_name = username.profile.nickname.toLowerCase();
+        let lowercase_name = username.profile.nickname.toLowerCase();
         return user_list.find( function (el) {
-            return ((el.profile.nickname.toLowerCase() === lowercased_name) && (el.status === 'online') && (el.profile.user_id !== username.profile.user_id));
+            return ((el.profile.nickname.toLowerCase() === lowercase_name) && (el.status === 'online') && (el.profile.user_id !== username.profile.user_id));
         });
     }
 }
@@ -336,7 +337,7 @@ sio.set('authorization', socketioJwt.authorize(
         secret: JWT_SECRET,
         handshake: true
     }
-    ));
+));
         
 sio.sockets
    .on('connection', function (socket) {
@@ -352,8 +353,10 @@ sio.sockets
         update_clients_user_list();
 
         log.panel(`${user.profile.nickname} connected to the admin panel.`);
-        print_online_users();                                  
+        print_online_users();                         
     
+        socket.emit('bot_config', Bot.get_all_options());
+
         socket.on('disconnect', function () {
             user.set_status('offline');
             update_clients_user_list();

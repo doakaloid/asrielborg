@@ -1,3 +1,5 @@
+'use strict';
+
 var colors = require('colors');
 
 module.exports = {
@@ -22,6 +24,6 @@ module.exports = {
 	},
 
     panel: function (msg) {
-        console.log(`${`[PANEL]`.magenta.bold} ${msg}`)
+        console.log(`${`[PANEL]`.magenta.bold} ${msg}`);
     }
-}
+};
