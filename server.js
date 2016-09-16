@@ -159,13 +159,7 @@ module.exports = {
                     res.send({
                         success_state: false,
                         message: "There isn't any password set.",
-                    });    
-                } else if (login_password.length > 100 || login_password.length < 5) {
-                    //Password isn't even valid.
-                    res.send({
-                        success_state: false,
-                        message: "Invalid password.",
-                    });
+                    });  
                 } else if (nickname_rating === 'notstring') {
                     //Bad username. Not a string.
                     res.send({
@@ -177,6 +171,12 @@ module.exports = {
                     res.send({
                         success_state: false,
                         message: `Bad nickname. It must be longer than ${MIN_NICK_LENGTH} characters and shorter than ${MAX_NICK_LENGTH}.`,
+                    });  
+                } else if (login_password.length > 100 || login_password.length < 5) {
+                    //Password isn't even valid.
+                    res.send({
+                        success_state: false,
+                        message: "Invalid password.",
                     });
                 } else if (nickname_rating === 'taken') {
                     //Username is taken.
