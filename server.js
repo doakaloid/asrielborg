@@ -13,7 +13,7 @@ const cookie_parser = require('cookie-parser');
 
 const log  = require('./log' );
 const User = require('./user');
-const Bot = require('./main');
+const Bot  = require('./main');
 
 const PASSWORD_PATH   = './password_hash';
 const JWT_SECRET      = crypto.randomBytes(1024);
@@ -21,6 +21,8 @@ const MIN_NICK_LENGTH = 3;
 const MAX_NICK_LENGTH = 20;
 const MIN_PASS_LENGTH = 6;
 const MAX_PASS_LENGTH = 100;
+const MAX_MAGIC_WORD_LENGTH = 20;
+const MIN_MAGIC_WORD_LENGTH = 1;
 
 var app     = express();
 var port    = 10991;
@@ -332,6 +334,14 @@ function update_clients_user_list() {
     }));
 }
 
+/**
+ * Broadcasts panel update to all clients.
+ * @param {Array} settings
+ */ 
+function broadcast_settings(settings) {
+    sio.sockets.emit('bot_config', settings);
+}
+
 sio.set('authorization', socketioJwt.authorize(
     {
         secret: JWT_SECRET,
@@ -349,19 +359,44 @@ sio.sockets
             return;
         }
         
+        // Commence the connection ritual
         user.set_status('online');
-        update_clients_user_list();
-
         log.panel(`${user.profile.nickname} connected to the admin panel.`);
-        print_online_users();                         
     
-        socket.emit('bot_config', Bot.get_all_options());
-
+        print_online_users();  
+        update_clients_user_list();
+                           
+        socket.emit('bot_config', Bot.get_all_options()); // Send the bot configs to the new user
+        // End of the connection ritual
+    
         socket.on('disconnect', function () {
             user.set_status('offline');
             update_clients_user_list();
 
             log.panel(`User ${user.profile.nickname} disconnected.`);
             print_online_users();                        
+        });
+
+        socket.on('submit_magic_word', function (data) {
+            let res = {
+                type: 'magic_word',
+                success: false,
+                message: "Unknown error.",
+            };
+            if (typeof data.magic_word === 'string') {
+                if (data.magic_word.length > MAX_MAGIC_WORD_LENGTH) {
+                    res.message = `Max characters per word is ${MAX_MAGIC_WORD_LENGTH}.`;
+                } else if (data.magic_word.length < MIN_MAGIC_WORD_LENGTH) {
+                    res.message = `Minimum characters per word is ${MIN_MAGIC_WORD_LENGTH}.`;
+                } else {
+                    res.success = true;
+                    res.message = "Magic word set successfully.";
+                    Bot.set_option('magic_words', data.magic_word);
+                    broadcast_settings( {magic_words: Bot.get_option(['magic_words'])} );
+                }
+            } else {
+                res.message = "That was not a word. How rude of you!";
+            }
+            socket.emit('action-response', res);
         });
     });
