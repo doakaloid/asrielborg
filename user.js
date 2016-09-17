@@ -7,7 +7,7 @@ module.exports = function (decoded_token) {
 	this.profile  = decoded_token;
 	this.status = 'offline';
 
-	this.set_status = function (status) {
+	this.setStatus = function (status) {
 		this.status = status;
 	}
 }

@@ -6,7 +6,7 @@ module.exports = {
      * @param {*} value
      */
     set_option(option, value) {
-        if (option === 'replyrate' || option === 'replynick' || option === 'replymagic') {
+        if (option === 'replyRate' || option === 'replyNick' || option === 'replyMagic') {
             if (value >= 0 && value <= 100) {
                 config[option] = value;
             }
@@ -14,7 +14,7 @@ module.exports = {
             if (typeof value === 'boolean') {
                 config[option] = value;
             }
-        } else if (option === 'autosaveperiod') {
+        } else if (option === 'autoSavePeriod') {
             if (value > 0) {
                 config[option] = value;
             }
@@ -44,22 +44,22 @@ module.exports = {
     get_options(options) {
         return options.map( (option) => config[option]);
     },
-    get_all_options() {
+    retrieveAllOptions() {
         return {
-            replyrate: config.replyrate,
-            replynick: config.replynick,
-            replymagic: config.replymagic,
+            replyrate: config.replyRate,
+            replynick: config.replyNick,
+            replymagic: config.replyMagic,
 
             speaking: config.speaking,
             learning: config.learning,
 
-            autosaveperiod: config.autosaveperiod,
+            autosaveperiod: config.autoSavePeriod,
 
-            magic_words: config.magic_words,
-            blacklisted_words: config.blacklisted_words
+            magic_words: config.magicWords,
+            blacklisted_words: config.blacklistedWords
         };
     },
-    save_config: write_config
+    save_config: writeConfig
 };
 
 const Discord = require('discord.js');
@@ -71,11 +71,11 @@ const log = require('./log');
 const server = require('./server');
 
 // You can change the paths here, for whatever reason.
-const config_path = './config.json';
-const lines_path = './lines.txt';
+const CONFIG_PATH = './config.json';
+const LINES_PATH = './lines.txt';
 
-var known_lines = [];
-var known_words = [];
+var linesDictionary = [];
+var wordsDictionary = [];
 var bot;
 
 log.notice("Check for updates! They can be found at https://git.io/via60");
@@ -85,41 +85,41 @@ var config = {
     port: 10991,                        // The port the panel will run in.
     token: "YOUR TOKEN HERE",           // Discord API Token
 
-    replyrate: 1.0,                     // The chance that the bot will reply to any message, in percent.
-    replynick: 100.0,                   // The chance that the bot will reply when its nick is mentioned, in percent.
-    replymagic: 10.0,                   // The chance that the bot will reply when a magic word is said, in percent.
+    replyRate: 1.0,                     // The chance that the bot will reply to any message, in percent.
+    replyNick: 100.0,                   // The chance that the bot will reply when its nick is mentioned, in percent.
+    replyMagic: 10.0,                   // The chance that the bot will reply when a magic word is said, in percent.
 
     speaking: true,                     // Whether the bot is speaking or not.
     learning: true,                     // Whether the bot is learning or not.
 
-    autosaveperiod: 200,                // Auto save period (in seconds)
+    autoSavePeriod: 200,                // Auto save period (in seconds)
 
-    magic_words: ["a trigger", "another trigger"], // The list of magic words the bot will reply to (separated by spaces)
-    blacklisted_words: ["very bad word", "another bad word"]  // The list of words that will make the bot not learn a sentence if it contains one of these words
+    magicWords: ["a trigger", "another trigger"], // The list of magic words the bot will reply to (separated by spaces)
+    blacklistedWords: ["very bad word", "another bad word"]  // The list of words that will make the bot not learn a sentence if it contains one of these words
 };
 
 /**
  * Writes a new configuration file from the config object.
  */
-function write_config() {
+function writeConfig() {
     "use strict";
-    fs.writeFile(config_path, JSON.stringify(config, null, '\n'), (err) => {
+    fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, '\n'), (err) => {
         if (err) {
-            return log.fatal(`Could not write to ${config_path}. ${err}`);
+            return log.fatal(`Could not write to ${CONFIG_PATH}. ${err}`);
         }
     });
 }
 
-// Does a config file already exist? Attempting to load from config_path.
+// Does a config file already exist? Attempting to load from CONFIG_PATH.
 try {
-    fs.accessSync(config_path, fs.FS_OK);
-    fs.readFile(config_path, (err, data) => {
+    fs.accessSync(CONFIG_PATH, fs.FS_OK);
+    fs.readFile(CONFIG_PATH, (err, data) => {
         if (err) { throw err; }
-        validate_config( JSON.parse(data) );
+        validateConfig( JSON.parse(data) );
     });
 } catch (err) {
     // Config file doesn't exist or is not accessible. Attempt creating a new one.
-    write_config();
+    writeConfig();
 }
 
 /**
@@ -129,71 +129,71 @@ try {
  * Data contains the following fields:
  * {Number} port                - The port that the panel will run in.
  * {String} token               - The Discord API token to be used for the bot.
- * {Number} replyrate           - The chance that the bot will reply to any message, in percent.
- * {Number} replymagic          - The chance that the bot will reply when a magic word is said, in percent.
+ * {Number} replyRate           - The chance that the bot will reply to any message, in percent.
+ * {Number} replyMagic          - The chance that the bot will reply when a magic word is said, in percent.
  * {Number} speaking            - Whether the bot is speaking or not. (0: not learning, 1: learning)
  * {Number} learning            - Whether the bot is learning or not. (0: not learning, 1: learning)
- * {Number} autosaveperiod      - Auto save period (in seconds)
- * {String} magic_words          - The list of magic words the bot will reply to (separated by spaces).
- * {String} blacklisted_words    - (Optional) The list of words that will make the bot not learn a sentence if it contains one of these words
+ * {Number} autoSavePeriod      - Auto save period (in seconds)
+ * {String} magicWords          - The list of magic words the bot will reply to (separated by spaces).
+ * {String} blacklistedWords    - (Optional) The list of words that will make the bot not learn a sentence if it contains one of these words
  */
-function validate_config(data) {
+function validateConfig(data) {
     "use strict";
     assert((typeof data.port  === 'number' && data.port >= 1 && data.port <= 65535));
     assert((typeof data.token === 'string'));
     //
-    assert((typeof data.replyrate === 'number' && data.replyrate >= 0 && data.replyrate <= 100));
-    assert((typeof data.replynick === 'number' && data.replynick >= 0 && data.replynick <= 100));
-    assert((typeof data.replymagic === 'number' && data.replymagic >= 0 && data.replymagic <= 100));
+    assert((typeof data.replyRate === 'number' && data.replyRate >= 0 && data.replyRate <= 100));
+    assert((typeof data.replyNick === 'number' && data.replyNick >= 0 && data.replyNick <= 100));
+    assert((typeof data.replyMagic === 'number' && data.replyMagic >= 0 && data.replyMagic <= 100));
     //
     assert((typeof data.speaking === 'boolean'));
     //
     assert((typeof data.learning === 'boolean'));
     //
-    assert((typeof data.autosaveperiod === 'number' && data.autosaveperiod >= 0 ));
+    assert((typeof data.autoSavePeriod === 'number' && data.autoSavePeriod >= 0 ));
     //
-    assert((data.magic_words instanceof Array));
-    data.magic_words = data.magic_words.map( (word) => word.toLowerCase().trim());
+    assert((data.magicWords instanceof Array));
+    data.magicWords = data.magicWords.map( (word) => word.toLowerCase().trim());
     //
-    assert((data.blacklisted_words instanceof Array));
-    data.blacklisted_words = data.blacklisted_words.map( (word) => word.toLowerCase().trim());
+    assert((data.blacklistedWords instanceof Array));
+    data.blacklistedWords = data.blacklistedWords.map( (word) => word.toLowerCase().trim());
 
     config = data; // Save the configuration into memory.
-    load_lines();
+    loadLinesFile();
 
 }
 
 /**
- * Load the file in lines_path.
+ * Load the file in LINES_PATH.
  * If the file doesn't exist, it will create a new one and then call connect().
  * If the file does exit,
  */
-function load_lines() {
+function loadLinesFile() {
     "use strict";
-    if (!fs.existsSync(lines_path)) {
-        fs.writeFile(lines_path, "", (err) => {
+    if (!fs.existsSync(LINES_PATH)) {
+        fs.writeFile(LINES_PATH, "", (err) => {
             if (!err) {
-                log.notice(`Created new ${lines_path}.`);
+                log.notice(`Created new ${LINES_PATH}.`);
                 connect(); // Loading was successful; connect to server.
             } else {
-                console.log(`Could not write to ${lines_path}. ${err}`);
+                console.log(`Could not write to ${LINES_PATH}. ${err}`);
             }
         });
     }
-    fs.readFile(lines_path, (err, data) => {
+    fs.readFile(LINES_PATH, (err, data) => {
         if (err) { throw err; }
         // data: the file's contents turned into lowercase, with all the carriage returns removed.
         data = data.toString()
             .toLowerCase()
             .replace(/\r/gm,'');
 
-        known_lines = data.split(/(\n|\.\ )/)
+        linesDictionary = data.split(/(\n|\.\ )/)
             .filter((el) => {
                 return el !== "\n"; // Remove all the unnecessary line breaks.
             });
-        known_words = unique(get_words(data));
+        wordsDictionary = unique(extractWords(data));
 
-        log.notice(`I know ${known_lines.length - 1} lines and ${known_words.length - 1} unique words.`);
+        log.notice(`I know ${linesDictionary.length - 1} lines and ${wordsDictionary.length - 1} unique words.`);
         connect();
     });
 }
@@ -203,7 +203,7 @@ function load_lines() {
  */
 function connect() {
     "use strict";
-    server.server_start(config.port);
+    server.startServer(config.port);
 
     bot = new Discord.Client();
     bot.login(config.token);
@@ -212,141 +212,141 @@ function connect() {
         log.notice("Successfully connected to Discord.");
     });
 
-    bot.on("message", (message_t) => {
-        log.message(message_t.author, message_t.channel, message_t.content);
-        if (message_t.author !== bot.user) {
-            process_message(message_t);
+    bot.on("message", (discordMessage) => {
+        log.message(discordMessage.author, discordMessage.channel, discordMessage.content);
+        if (discordMessage.author !== bot.user) {
+            processMessage(discordMessage);
         }
     });
 
-    bot.on("messageDelete", (message_t) => {
-        message_t.channel.sendMessage(`${message_t.author}: i know what you did`);
+    bot.on("messageDelete", (discordMessage) => {
+        discordMessage.channel.sendMessage(`${discordMessage.author}: i know what you did`);
     });
 
-    setInterval(save_lines, config.autosaveperiod * 1000);
+    setInterval(saveLinesFile, config.autoSavePeriod * 1000);
 }
 
 /**
  * Handles all learning and speech of the bot.
- * @param {Object} message_t - Discord message object to be processed
+ * @param {Object} discordMessage - Discord messageString object to be processed
  */
-function process_message(message_t) {
+function processMessage(discordMessage) {
     "use strict";
-    let message = message_t.content.toLowerCase();  // Stores the contents of the message object in a string variable.
+    let messageString = discordMessage.content.toLowerCase();  // Stores the contents of the messageString object in a string variable.
 
     if (config.learning) {
-        learn(message);
+        learn(messageString);
     }
 
     if (config.speaking) {
-        let words = get_words(message);
+        let words = extractWords(messageString);
 
         if (config.speaking) {
             /**
-             * contains_magic is an anonymous function that will return true if the message
-             * contains any of the words inside config.magic_words. Not case sensitive.
+             * containsMagic is an anonymous function that will return true if the messageString
+             * contains any of the words inside config.magicWords. Not case sensitive.
              */
-            let contains_magic = function () {
-                return config.magic_words.find( (entry) => message.includes(entry));
+            let containsMagic = function () {
+                return config.magicWords.find( (entry) => messageString.includes(entry));
             };
 
             let chance = Math.floor(Math.random() * 100);
 
-            if ((contains_magic() && chance <= config.replymagic)
-                ||  (message.includes(bot.user.username) && chance <= config.replynick)
-                ||  (chance <= config.replyrate)) {
-                reply_to(message_t);
+            if ((containsMagic() && chance <= config.replyMagic)
+                ||  (messageString.includes(bot.user.username) && chance <= config.replyNick)
+                ||  (chance <= config.replyRate)) {
+                replyTo(discordMessage);
             }
         }
     }
 }
 
 /**
- * Replies to the message object using the Discord API.
- * @param {Object} message_t - The message that it will reply to.
+ * Replies to the messageString object using the Discord API.
+ * @param {Object} discordMessage - The messageString that it will reply to.
  */
-function reply_to(message_t) {
+function replyTo(discordMessage) {
     "use strict";
-    let message       = message_t.content.toLowerCase(); // Stores the contents of the message object in a string variable.
-    let message_words = get_words(message);
+    let messageString = discordMessage.content.toLowerCase(); // Stores the contents of the messageString object in a string variable.
+    let messageWords = extractWords(messageString);
 
-    let recognized = []; // Array of words that the bot recognizes in the message.
-    message_words.forEach( (word) => {
-        if (known_words.includes(word)) {
-            recognized.push(word);
+    let recognizedWords = []; // Array of words that the bot recognizes in the messageString.
+    messageWords.forEach( (word) => {
+        if (wordsDictionary.includes(word)) {
+            recognizedWords.push(word);
         }
     });
 
-    if (recognized.length <= 0) {
+    if (recognizedWords.length <= 0) {
     } else {
-        let picked_word = choose_from(recognized); // Pick a random word from the recognized words to start building a sentence from there.
-        let output_msg = [picked_word];            //
+        let startingWord = chooseRandomFromArray(recognizedWords); // Pick a random word from the recognizedWords words to start building a sentence from there.
+        let messageToSend = [startingWord];            //
 
-        let re = new RegExp(`\\b${escapeRegex(picked_word)}\\b`, "gi"); // This expression matches the picked word.
+        let re = new RegExp(`\\b${escapeRegex(startingWord)}\\b`, "gi"); // This expression matches the picked word.
 
-        // Start filling the output message from the left.
-        let random_line = get_random_line_containing(picked_word);
-        output_msg.unshift(random_line.split(re)
+        // Start filling the output messageString from the left.
+        let randomLine = retrieveRandomLineContaining(startingWord);
+        messageToSend.unshift(randomLine.split(re)
             .splice(0, 1)
             .join(re));
 
-        // Start filling the output message from the right.
-        random_line = get_random_line_containing(picked_word);
-        output_msg.push(random_line.split(re)
+        // Start filling the output messageString from the right.
+        randomLine = retrieveRandomLineContaining(startingWord);
+        messageToSend.push(randomLine.split(re)
             .splice(-1, 1)
             .join(re));
 
-        message_t.channel.sendMessage(output_msg.join(''));
+        discordMessage.channel.sendMessage(messageToSend.join(''));
     }
 }
 
 /**
- * @param {String} message - The message to be learned.
+ * @param {String} messageString - The messageString to be learned.
  */
-function learn(message) {
+function learn(messageString) {
     "use strict";
-    let filtered_message = message.toLowerCase()
+    let choppedMessage = messageString.toLowerCase()
         .split(/\.\ |\n/);
 
-    let message_words    = get_words(message.toLowerCase());
+    let messageWords = extractWords(messageString.toLowerCase());
 
-    let prohibited_words = []; // Flag that determines whether the sentence contains a blacklisted word
-    if (config.blacklisted_words.length > 0) {
-        config.blacklisted_words.forEach((el) => {
-            if (message_words.includes(el)) {
-                // Word in message matches a blacklisted word.
-                prohibited_words.push(el);
+    let forbiddenWords = []; // Flag that determines whether the sentence contains a blacklisted word
+    if (config.blacklistedWords.length > 0) {
+        config.blacklistedWords.forEach((el) => {
+            if (messageWords.includes(el)) {
+                // Word in messageString matches a blacklisted word.
+                forbiddenWords.push(el);
             }
         });
     }
-    if (prohibited_words.length > 0) {
-        log.notice(`Refusing to learn message containing blacklisted words: ${prohibited_words.join(', ')}`);
+    if (forbiddenWords.length > 0) {
+        log.notice(`Refusing to learn message containing blacklisted words: ${forbiddenWords.join(', ')}`);
     }
 
-    filtered_message.forEach( (sentence) => {
-        if (known_lines.includes(sentence)) {
+    choppedMessage.forEach( (sentence) => {
+        if (linesDictionary.includes(sentence)) {
             // Sentence already found in lines.
             return false;
         }
-        known_lines.push(sentence);
+        linesDictionary.push(sentence);
 
-        message_words.forEach( (word) => {
-            if (!known_words.includes(word)) {
+        messageWords.forEach( (word) => {
+            if (!wordsDictionary.includes(word)) {
                 // Word is not known; add word to vocabulary.
-                known_words.push(word);
+                wordsDictionary.push(word);
             }
         });
     });
 }
 
 /**
- * Write all the bot's lines to the lines_path file.
+ * Write all the bot's lines to the LINES_PATH file.
  */
-function save_lines() {
+function saveLinesFile() {
     "use strict";
-    fs.writeFile(lines_path, known_lines.join('\r\n'), (err) => {
+    fs.writeFile(LINES_PATH, linesDictionary.join('\r\n'), (err) => {
         if (err) {
-            return log.error(`Could not write to ${lines_path}. ${err}`);
+            return log.error(`Could not write to ${LINES_PATH}. ${err}`);
         }
         log.notice(`Saved lines at ${new Date()}.`);
     });
@@ -357,7 +357,7 @@ function save_lines() {
  * @param {Array} array
  * @return {Object} - random object within the array
  */
-function choose_from(array) {
+function chooseRandomFromArray(array) {
     "use strict";
     if (array.length === 0) {
         return null;
@@ -370,17 +370,17 @@ function choose_from(array) {
  * @param {String} word - The word to search for.
  * @return {String} - The random line found in the known lines.
  */
-function get_random_line_containing(word) {
+function retrieveRandomLineContaining(word) {
     "use strict";
-    let line_list = [];
+    let matchingLines = [];
     let re = new RegExp(`\\b${escapeRegex(word)}\\b`, 'gi');
 
-    known_lines.forEach( (line, i, arr) => {
+    linesDictionary.forEach( (line, i, arr) => {
         if ( line.match(re) ) {
-            line_list.push(line);
+            matchingLines.push(line);
         }
     });
-    return line_list.length > 0 ? choose_from(line_list) : "";
+    return matchingLines.length > 0 ? chooseRandomFromArray(matchingLines) : "";
 }
 
 /**
@@ -418,7 +418,7 @@ function escapeRegex(str) {
  * @param {String} line
  * @return {Array} - The array containing the words of the string.
  */
-function get_words(line) {
+function extractWords(line) {
     "use strict";
     return line.split(/[.!,;:()?\ ]/);
 }

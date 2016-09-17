@@ -1,5 +1,5 @@
 config.json
-password_hash
+serverPasswordHash
 lines.txt
 .idea/*
 .gitignore

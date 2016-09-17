@@ -45,7 +45,7 @@
         </div>
     </nav>
 
-    <% if (locals.password_set) { %>
+    <% if (locals.passwordSet) { %>
         <!-- Displayed if password is set -->
 
         <div class="container">
@@ -72,7 +72,7 @@
                     url: '/',
                     data: $('#login').serialize(),
                     success: function (res) {
-                        if (res.success_state) {
+                        if (res.successState) {
                             //This is your current session's token.
                             //Do not share it with anybody or they may gain access to your session.
                             var token = res.token;
@@ -116,7 +116,7 @@
                         url: '/',
                         data: $("#makepassword").serialize(),
                         success: function (res) {
-                            if (res.success_state) {
+                            if (res.successState) {
                                 location.reload();
                             } else {
                                 show_warning(res.message)

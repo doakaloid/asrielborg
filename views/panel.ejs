@@ -222,31 +222,31 @@
 
             socket.on('bot_config', function (data) {
                 console.log("Received data: " + JSON.stringify(data));
-                if (data.replyrate) {
-                    $("#replyrate-value").text(data.replyrate);
-                    $("#replyrate-slider").slider({
+                if (data.replyRate) {
+                    $("#replyRate-value").text(data.replyRate);
+                    $("#replyRate-slider").slider({
                         range: "min",
                         min: 0,
                         max: 100,
-                        value: data.replyrate,
+                        value: data.replyRate,
                     });
                 }
-                if (data.replynick) {
-                    $("#replynick-value").text(data.replynick);
-                    $("#replynick-slider").slider({
+                if (data.replyNick) {
+                    $("#replyNick-value").text(data.replyNick);
+                    $("#replyNick-slider").slider({
                         range: "min",
                         min: 0,
                         max: 100,
-                        value: data.replynick,
+                        value: data.replyNick,
                     });
                 }
-                if (data.replymagic) {
-                    $("#replymagic-value").text(data.replymagic);
-                    $("#replymagic-slider").slider({
+                if (data.replyMagic) {
+                    $("#replyMagic-value").text(data.replyMagic);
+                    $("#replyMagic-slider").slider({
                         range: "min",
                         min: 0,
                         max: 100,
-                        value: data.replymagic,
+                        value: data.replyMagic,
                     });
                 }
                 if (typeof data.learning === 'boolean') {
@@ -265,15 +265,15 @@
                         $("#speaking-label").html("<span class='label label-danger'>OFF</span>");
                     }
                 }
-                if (data.magic_words) {
+                if (data.magicWords) {
                     $("#magic-words-table").html("");
-                    data.magic_words.forEach( function (word) {
+                    data.magicWords.forEach( function (word) {
                         $("#magic-words-table").append(`<tr><td>${word}</td></tr>`);
                     });
                 }
             });
 
-            socket.on('update_token', function (data) {
+            socket.on('updateToken', function (data) {
                 token = data.token;
 
                 let date = new Date();
@@ -308,11 +308,11 @@
                alert('The connection has timed out.'); 
             });
 
-            socket.on('user_list', function(data) {
+            socket.on('registeredUsers', function(data) {
                 let online_users = data;
                 $("#user-table").html(""); // Empty the user list to receive a new one.
                 online_users.forEach(function (user) {
-                    $("#user-table").append(`<tr><td>${user.nickname}</td><td>${user.ip_address}</td></tr>`);
+                    $("#user-table").append(`<tr><td>${user.nickname}</td><td>${user.ipAddress}</td></tr>`);
                 });
             });
         }
