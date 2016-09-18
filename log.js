@@ -1,3 +1,5 @@
+'use strict';
+
 var colors = require('colors');
 
 module.exports = {
@@ -18,6 +20,10 @@ module.exports = {
     },
 	
 	message: function (author, channel, msg) {
-		console.log(`[${channel.name}]: <${author.username}> ${msg}`)
-	}
-}
+		console.log(`[${channel.name}]: <${author.username}> ${msg}`);
+	},
+
+    panel: function (msg) {
+        console.log(`${`[PANEL]`.magenta.bold} ${msg}`);
+    }
+};

@@ -1,6 +1,6 @@
 {
   "name": "asrielborg.js",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "AsrielBorg for JavaScript",
   "main": "./main.js",
   "dependencies": {
@@ -8,7 +8,7 @@
     "crypto": "0.0.3",
     "discord.js": "^9.1.0",
     "fs": "0.0.2",
-    "underscore": "^1.8.3",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {},
   "scripts": {
