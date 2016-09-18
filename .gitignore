@@ -3,3 +3,4 @@ serverPasswordHash
 lines.txt
 .idea/*
 .gitignore
+node_modules/
