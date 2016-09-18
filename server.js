@@ -1,33 +1,31 @@
 'use strict';
 
-const fs          = require('fs');
-const express     = require('express');
+const fs = require('fs');
+const express = require('express');
 const bodyParser = require('body-parser');
-const crypto      = require('crypto');
-const session     = require('client-sessions');
-const jwt         = require('jsonwebtoken');
+const crypto = require('crypto');
+const session = require('client-sessions');
+const jwt = require('jsonwebtoken');
 const socketioJwt = require('socketio-jwt');
-const socketIo    = require('socket.io');
-const http        = require('http');
+const socketIo = require('socket.io');
+const http = require('http');
 const cookieParser = require('cookie-parser');
 
-const log  = require('./log' );
+const log = require('./log');
 const User = require('./user');
-const Bot  = require('./main');
+const Bot = require('./main');
 
-const PASSWORD_PATH   = './serverPasswordHash';
-const JWT_SECRET      = crypto.randomBytes(1024);
+const PASSWORD_PATH = './serverPasswordHash';
+const JWT_SECRET = crypto.randomBytes(1024);
 const MIN_NICK_LENGTH = 3;
 const MAX_NICK_LENGTH = 20;
 const MIN_PASS_LENGTH = 6;
 const MAX_PASS_LENGTH = 100;
-const MAX_MAGIC_WORD_LENGTH = 20;
-const MIN_MAGIC_WORD_LENGTH = 1;
 
-var app     = express();
-var port    = 10991;
-var server  = http.Server(app);
-var sio     = socketIo.listen(server);
+var app = express();
+var port = 10991;
+var server = http.Server(app);
+var sio = socketIo.listen(server);
 
 /**
  * Loads the password from the PASSWORD_PATH file.
@@ -35,18 +33,22 @@ var sio     = socketIo.listen(server);
  * If the program has no access to the path, it will shut down.
  */
 function load_password() {
+    "use strict";
+
     let passwordHash = '';
     try {
         fs.accessSync(PASSWORD_PATH, fs.FS_OK);
         fs.readFile(PASSWORD_PATH, (err, data) => {
-            if (err) { throw err; }
+            if (err) {
+                throw err;
+            }
             log.notice('Loaded password successfully.');
-            
+
             if (data.toString() === '') {
                 log.warning(`Please go to http://127.0.0.1:${port}/ to set your password.`)
             }
             passwordHash = data.toString();
-        })
+        });
     }
     catch (err) {
         fs.writeFile(PASSWORD_PATH, '', (err) => {
@@ -54,9 +56,7 @@ function load_password() {
                 log.error(`Could not write to ${PASSWORD_PATH}. Please check your permissions and try again.`);
                 throw err;
             }
-            else {
-                log.notice(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`);
-            }
+            log.notice(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`);
         });
     }
     return passwordHash;
@@ -85,7 +85,7 @@ function checkAuth(req, res, next) {
 }
 
 module.exports = {
-    
+
     /**
      * @param {Number} user_port - Any integer between 1 and 65535.
      */
@@ -96,29 +96,29 @@ module.exports = {
             port = user_port;
         }
         this.serverPasswordHash = load_password();
-        
+
         app.set('view engine', 'ejs');
-        
+
         app.use(bodyParser.json());
-        app.use(bodyParser.urlencoded({ extended: true }));
+        app.use(bodyParser.urlencoded({extended: true}));
         app.use(cookieParser());
 
         app.use(express.static('static'));
-        
+
         app.get('/', (req, res) => {
-           log.panel(`${req.connection.remoteAddress} accessed the login page.`);    
-        
-           if (req.cookies.token) {
-               res.redirect('/panel');
-           } else {
-               res.render('index.ejs', {
-                   passwordSet: (this.serverPasswordHash !== ''),
-                   successState: true,
-                   message: '',
-               });
-           }
+            log.panel(`${req.connection.remoteAddress} accessed the login page.`);
+
+            if (req.cookies.token) {
+                res.redirect('/panel');
+            } else {
+                res.render('index.ejs', {
+                    passwordSet: (this.serverPasswordHash !== ''),
+                    successState: true,
+                    message: '',
+                });
+            }
         });
-        
+
         app.post('/', (req, res) => {
             //User is setting a new password
             if (typeof req.body.new_password === 'string') { //TODO: FIX VARIABLE NAME
@@ -150,18 +150,18 @@ module.exports = {
                 });
 
             } else if (typeof req.body.login_input === 'string'
-                    && typeof req.body.login_name  === 'string') {
+                && typeof req.body.login_name === 'string') {
                 //User is attempting to log in with not necessarily valid input
                 let formPassword = req.body.login_input;
                 let formNickname = req.body.login_name;
                 let nicknameRating = rateNickname(formNickname);
-                
+
                 if (this.serverPasswordHash === '') {
                     //There is no password set.
                     res.send({
                         successState: false,
                         message: "There isn't any password set.",
-                    });  
+                    });
                 } else if (nicknameRating === 'notstring') {
                     //Bad username. Not a string.
                     res.send({
@@ -173,7 +173,7 @@ module.exports = {
                     res.send({
                         successState: false,
                         message: `Bad nickname. It must be longer than ${MIN_NICK_LENGTH} characters and shorter than ${MAX_NICK_LENGTH}.`,
-                    });  
+                    });
                 } else if (formPassword.length > 100 || formPassword.length < 5) {
                     //Password isn't even valid.
                     res.send({
@@ -191,14 +191,15 @@ module.exports = {
                     let hashedFormPassword = crypto.createHash('sha256')
                         .update(formPassword)
                         .digest('hex');
-                    
+
                     if (hashedFormPassword == this.serverPasswordHash) {
                         //Success. Now create a token with the desired nickname AND store the IP address in the token.
                         let token = generateToken(req.body.login_name, req.connection.remoteAddress);
-                        
+
                         res.send({
                             successState: true,
-                            token: token});
+                            token: token
+                        });
                     } else {
                         res.send({
                             successState: false,
@@ -208,11 +209,11 @@ module.exports = {
                 }
             }
         });
-        
+
         app.get('/panel', checkAuth, (req, res) => {
             res.render('panel.ejs');
         });
-        
+
         server.listen(port, function () {
             log.panel("Server is now running.");
         });
@@ -220,13 +221,13 @@ module.exports = {
 };
 
 //Socket.IO stuff here.
-var registeredUsers   = [];
-var uniqueUserID      = 1; // A unique integer for each user.
+var registeredUsers = [];
+var uniqueUserID = 1; // A unique integer for each user.
 
 function printOnlineUsers() {
-    log.panel(`Users online: ` + getOnlineUsers().map( function (el) {
-        return [el.profile.nickname, el.profile.ipAddress];
-    }).join('; '));
+    log.panel(`Users online: ` + getOnlineUsers().map(function (el) {
+            return [el.profile.nickname, el.profile.ipAddress];
+        }).join('; '));
 }
 
 /**
@@ -244,16 +245,16 @@ function generateToken(nick, ipAddress) {
 
     registeredUsers.push(new User(userProfile));
 
-    return jwt.sign(userProfile, JWT_SECRET, { expiresIn: 60 * 60 }); // Expires in 1 hour
+    return jwt.sign(userProfile, JWT_SECRET, {expiresIn: 60 * 60}); // Expires in 1 hour
 }
 
 /**
  * UNUSED.
  */
 function updateToken(socket, token) {
-    let signedToken = jwt.sign(token, JWT_SECRET, { expiresIn: 60 * 60 }); // Expires in 1 hour
+    let signedToken = jwt.sign(token, JWT_SECRET, {expiresIn: 60 * 60}); // Expires in 1 hour
     socket.emit('token_update', {token: signedToken});
-} 
+}
 
 /**
  * Returns whether a nickname is available for usage.
@@ -279,7 +280,7 @@ function rateNickname(nickname) {
  * @return {Array} an array of online Users
  */
 function getOnlineUsers() {
-    return registeredUsers.filter( function (user) {
+    return registeredUsers.filter(function (user) {
         return user.status === 'online';
     });
 }
@@ -297,15 +298,15 @@ function getOnlineUsers() {
  * @return {Boolean}
  */
 function checkUsernameTaken(userOrNickname) {
-    
+
     if (typeof userOrNickname === 'string') {
         let usernameLowercase = userOrNickname.toLowerCase();
-        return registeredUsers.find( function (el) {
+        return registeredUsers.find(function (el) {
             return ((el.profile.nickname.toLowerCase() === usernameLowercase) && (el.status === 'online'));
         });
     } else if (userOrNickname instanceof User) {
         let usernameLowercase = userOrNickname.profile.nickname.toLowerCase();
-        return registeredUsers.find( function (el) {
+        return registeredUsers.find(function (el) {
             return ((el.profile.nickname.toLowerCase() === usernameLowercase) && (el.status === 'online') && (el.profile.user_id !== userOrNickname.profile.user_id));
         });
     }
@@ -316,8 +317,8 @@ function checkUsernameTaken(userOrNickname) {
  * @return {User}
  */
 function getUserByToken(decoded_token) {
-    return registeredUsers.find( function (user) {
-       return user.profile.user_id === decoded_token.user_id;
+    return registeredUsers.find(function (user) {
+        return user.profile.user_id === decoded_token.user_id;
     });
 }
 
@@ -325,20 +326,29 @@ function getUserByToken(decoded_token) {
  * Updates the visual list of all the connected clients
  */
 function updateAllClientsUserList() {
-    sio.sockets.emit('registeredUsers', getOnlineUsers().map( function(user) {
-         return {
+    sio.sockets.emit('registeredUserList', getOnlineUsers().map(function (user) {
+        return {
             nickname: user.profile.nickname,
             ipAddress: user.profile.ipAddress
-         };
+        };
     }));
 }
 
 /**
  * Broadcasts panel update to all clients.
  * @param {Array} settings
- */ 
+ */
 function updateAllClientsPanel(settings) {
-    sio.sockets.emit('bot_config', settings);
+    sio.sockets.emit('updateBotPanel', settings);
+}
+
+function determineMessageLocation(optionName) {
+    switch(optionName) {
+        case 'magicWordsAdd':
+            return 'magicWordInput';
+        default:
+            return 'undefined';
+    }
 }
 
 sio.set('authorization', socketioJwt.authorize(
@@ -347,27 +357,27 @@ sio.set('authorization', socketioJwt.authorize(
         handshake: true
     }
 ));
-        
+
 sio.sockets
-   .on('connection', function (socket) {
+    .on('connection', function (socket) {
         let user = getUserByToken(socket.client.request.decoded_token);
 
         if (checkUsernameTaken(user)) {
-            socket.emit('invalid_token', {message: "Username is taken."});
+            socket.emit('invalidToken', {message: "Username is taken."});
             socket.disconnect(true);
             return;
         }
-        
+
         // Commence the connection ritual
         user.setStatus('online');
         log.panel(`${user.profile.nickname} connected to the admin panel.`);
-    
+
         printOnlineUsers();
         updateAllClientsUserList();
-                           
-        socket.emit('bot_config', Bot.retrieveAllOptions()); // Send the bot configs to the new user
+
+        socket.emit('updateBotPanel', Bot.retrieveAllOptions()); // Send the bot configs to the new user
         // End of the connection ritual
-    
+
         socket.on('disconnect', function () {
             user.setStatus('offline');
             updateAllClientsUserList();
@@ -376,26 +386,27 @@ sio.sockets
             printOnlineUsers();
         });
 
-        socket.on('submit_magic_word', function (data) {
+        socket.on('submitData', function (data) {
             let res = {
-                type: 'magic_word',
                 success: false,
-                message: "Unknown error.",
+                location: determineMessageLocation(data.submitType),
+                message: 'Unknown error.',
             };
-            if (typeof data.magic_word === 'string') {
-                if (data.magic_word.length > MAX_MAGIC_WORD_LENGTH) {
-                    res.message = `Max characters per word is ${MAX_MAGIC_WORD_LENGTH}.`;
-                } else if (data.magic_word.length < MIN_MAGIC_WORD_LENGTH) {
-                    res.message = `Minimum characters per word is ${MIN_MAGIC_WORD_LENGTH}.`;
-                } else {
+
+            let trueOptionName = '';
+            if (Bot.submitDataTypes.includes(data.submitType)) {
+                try {
+                    trueOptionName = Bot.setOption(data.submitType, data.value);
                     res.success = true;
-                    res.message = "Magic word set successfully.";
-                    Bot.set_option('magicWords', data.magic_word);
-                    updateAllClientsPanel( {magicWords: Bot.get_option(['magicWords'])} );
+                    res.message = "Task successful.";
+                    updateAllClientsPanel(Bot.getOptions([trueOptionName]));
+                } catch (error) {
+                    res.message = error.message;
                 }
             } else {
-                res.message = "That was not a word. How rude of you!";
+                res.message = "Invalid submitType.";
             }
-            socket.emit('action-response', res);
+
+            socket.emit('submitDataResult', res);
         });
     });

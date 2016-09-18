@@ -1,70 +1,105 @@
 "use strict";
 
+const Discord = require('discord.js');
+const fs = require('fs');
+const assert = require('assert');
+
+const MAX_WORDLIST_WORD_LENGTH = 20;
+const MIN_WORDLIST_WORD_LENGTH = 1;
+
+/**
+ * Writes a new configuration file from the config object.
+ */
+function writeConfig() {
+    "use strict";
+    fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, ' '), (err) => {
+        if (err) {
+            return log.fatal(`Could not write to ${CONFIG_PATH}. ${err}`);
+        }
+    });
+}
+
+function validateWordListInsertion(wordListName, value) {
+    wordListName = wordListName.slice(0, -3); // Example: magicWordsAdd, blacklistedWordsAdd
+
+    if (typeof value !== 'string') {
+        throw new Error('The word must be a string.');
+    }
+    else if (value.length > MAX_WORDLIST_WORD_LENGTH) {
+        throw new Error(`This word is too long. It must be smaller than ${MAX_WORDLIST_WORD_LENGTH} characters.`);
+    }
+    else if (value.length < MIN_WORDLIST_WORD_LENGTH) {
+        throw new Error(`This word is too small. It must be longer than ${MIN_WORDLIST_WORD_LENGTH} characters.`);
+    }
+    else if (config[wordListName].includes(value.toLowerCase())) {
+        throw new Error(`Word is already found in ${wordListName}.`);
+    }
+    return wordListName;
+}
+
+function validateWordListRemoval(wordListName, value) {
+    wordListName = wordListName.slice(0, -7); // Example: magicWordsRemove, blacklistedWordsRemove
+
+    if (typeof value !== 'string') {
+        throw new Error('The word must be a string.');
+    }
+    else if (!config[wordListName].includes(value.toLowerCase())) {
+        throw new Error(`Word not found in ${wordListName}.`);
+    }
+    return wordListName;
+}
+
 module.exports = {
+
+    submitDataTypes: ['magicWordsAdd', 'blacklistedWordsAdd'],
     /**
-     * @param {String} option
+     * @param {String} optionName
      * @param {*} value
      */
-    set_option(option, value) {
-        if (option === 'replyRate' || option === 'replyNick' || option === 'replyMagic') {
-            if (value >= 0 && value <= 100) {
-                config[option] = value;
-            }
-        } else if (option === 'speaking' || option === 'learning') {
-            if (typeof value === 'boolean') {
-                config[option] = value;
-            }
-        } else if (option === 'autoSavePeriod') {
-            if (value > 0) {
-                config[option] = value;
-            }
-        } else if (typeof value === 'string') {
-            if (option === 'magic_words_add' || option === 'blacklisted_words_add') {
-                option = option.slice(0, -4); // Removes the '_add' portion of the option
-                value = value.toLowerCase().trim();
+    setOption(optionName, value) {
+        let trueOptionName = '';
 
-                if (!config[option].includes(value)) { // Check if the word already exists in the lists
-                    config[option].push(value);
-                }
-            } else if (option === 'magic_words_remove' || option === 'blacklisted_words_remove') {
-                option = option.slice(0, -7); // Removes the '_remove' portion of the option
-                value = value.toLowerCase().trim();
+        switch (optionName) {
+            case 'magicWordsAdd':
+            case 'blacklistedWordsAdd':
+                trueOptionName = validateWordListInsertion(optionName, value);
 
-                let index = config[option].indexOf(value);
-                if (index > -1) {
-                    config[option].splice(index, 1);
-                }
-            }
+                config[trueOptionName].push(value);
+                console.log(config[trueOptionName]);
+                break;
+            default:
+                throw new Error('Unknown option.');
+                break;
         }
+        writeConfig();
+        return trueOptionName;
     },
     /**
      * @param {Array} options
      * @return {Array}
      */
-    get_options(options) {
-        return options.map( (option) => config[option]);
+    getOptions(options) {
+        let returnOptions = {};
+        options.forEach(el => returnOptions[el] = config[el]);
+        return returnOptions;
     },
     retrieveAllOptions() {
         return {
-            replyrate: config.replyRate,
-            replynick: config.replyNick,
-            replymagic: config.replyMagic,
+            replyRate: config.replyRate,
+            replyNick: config.replyNick,
+            replyMagic: config.replyMagic,
 
             speaking: config.speaking,
             learning: config.learning,
 
-            autosaveperiod: config.autoSavePeriod,
+            autoSavePeriod: config.autoSavePeriod,
 
-            magic_words: config.magicWords,
-            blacklisted_words: config.blacklistedWords
+            magicWords: config.magicWords,
+            blacklistedWords: config.blacklistedWords
         };
     },
-    save_config: writeConfig
+    save_config: writeConfig,
 };
-
-const Discord = require('discord.js');
-const fs = require('fs');
-const assert = require('assert');
 
 // Asrielborg's modules
 const log = require('./log');
@@ -98,24 +133,14 @@ var config = {
     blacklistedWords: ["very bad word", "another bad word"]  // The list of words that will make the bot not learn a sentence if it contains one of these words
 };
 
-/**
- * Writes a new configuration file from the config object.
- */
-function writeConfig() {
-    "use strict";
-    fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, '\n'), (err) => {
-        if (err) {
-            return log.fatal(`Could not write to ${CONFIG_PATH}. ${err}`);
-        }
-    });
-}
-
 // Does a config file already exist? Attempting to load from CONFIG_PATH.
 try {
     fs.accessSync(CONFIG_PATH, fs.FS_OK);
     fs.readFile(CONFIG_PATH, (err, data) => {
-        if (err) { throw err; }
-        validateConfig( JSON.parse(data) );
+        if (err) {
+            throw err;
+        }
+        validateConfig(JSON.parse(data));
     });
 } catch (err) {
     // Config file doesn't exist or is not accessible. Attempt creating a new one.
@@ -139,7 +164,7 @@ try {
  */
 function validateConfig(data) {
     "use strict";
-    assert((typeof data.port  === 'number' && data.port >= 1 && data.port <= 65535));
+    assert((typeof data.port === 'number' && data.port >= 1 && data.port <= 65535));
     assert((typeof data.token === 'string'));
     //
     assert((typeof data.replyRate === 'number' && data.replyRate >= 0 && data.replyRate <= 100));
@@ -153,10 +178,10 @@ function validateConfig(data) {
     assert((typeof data.autoSavePeriod === 'number' && data.autoSavePeriod >= 0 ));
     //
     assert((data.magicWords instanceof Array));
-    data.magicWords = data.magicWords.map( (word) => word.toLowerCase().trim());
+    data.magicWords = data.magicWords.map((word) => word.toLowerCase().trim());
     //
     assert((data.blacklistedWords instanceof Array));
-    data.blacklistedWords = data.blacklistedWords.map( (word) => word.toLowerCase().trim());
+    data.blacklistedWords = data.blacklistedWords.map((word) => word.toLowerCase().trim());
 
     config = data; // Save the configuration into memory.
     loadLinesFile();
@@ -181,11 +206,13 @@ function loadLinesFile() {
         });
     }
     fs.readFile(LINES_PATH, (err, data) => {
-        if (err) { throw err; }
+        if (err) {
+            throw err;
+        }
         // data: the file's contents turned into lowercase, with all the carriage returns removed.
         data = data.toString()
             .toLowerCase()
-            .replace(/\r/gm,'');
+            .replace(/\r/gm, '');
 
         linesDictionary = data.split(/(\n|\.\ )/)
             .filter((el) => {
@@ -247,14 +274,14 @@ function processMessage(discordMessage) {
              * contains any of the words inside config.magicWords. Not case sensitive.
              */
             let containsMagic = function () {
-                return config.magicWords.find( (entry) => messageString.includes(entry));
+                return config.magicWords.find((entry) => messageString.includes(entry));
             };
 
             let chance = Math.floor(Math.random() * 100);
 
             if ((containsMagic() && chance <= config.replyMagic)
-                ||  (messageString.includes(bot.user.username) && chance <= config.replyNick)
-                ||  (chance <= config.replyRate)) {
+                || (messageString.includes(bot.user.username) && chance <= config.replyNick)
+                || (chance <= config.replyRate)) {
                 replyTo(discordMessage);
             }
         }
@@ -271,7 +298,7 @@ function replyTo(discordMessage) {
     let messageWords = extractWords(messageString);
 
     let recognizedWords = []; // Array of words that the bot recognizes in the messageString.
-    messageWords.forEach( (word) => {
+    messageWords.forEach((word) => {
         if (wordsDictionary.includes(word)) {
             recognizedWords.push(word);
         }
@@ -323,14 +350,14 @@ function learn(messageString) {
         log.notice(`Refusing to learn message containing blacklisted words: ${forbiddenWords.join(', ')}`);
     }
 
-    choppedMessage.forEach( (sentence) => {
+    choppedMessage.forEach((sentence) => {
         if (linesDictionary.includes(sentence)) {
             // Sentence already found in lines.
             return false;
         }
         linesDictionary.push(sentence);
 
-        messageWords.forEach( (word) => {
+        messageWords.forEach((word) => {
             if (!wordsDictionary.includes(word)) {
                 // Word is not known; add word to vocabulary.
                 wordsDictionary.push(word);
@@ -375,8 +402,8 @@ function retrieveRandomLineContaining(word) {
     let matchingLines = [];
     let re = new RegExp(`\\b${escapeRegex(word)}\\b`, 'gi');
 
-    linesDictionary.forEach( (line, i, arr) => {
-        if ( line.match(re) ) {
+    linesDictionary.forEach((line, i, arr) => {
+        if (line.match(re)) {
             matchingLines.push(line);
         }
     });
