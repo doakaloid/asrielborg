@@ -290,9 +290,7 @@ function getOnlineUsers() {
  * If the username entered is a string, it will consider a name to be 'taken':
  *      - If the inserted name and a user's name is equal;
  *      - AND if that user is online.
- * If the username entered is an User object, it will consider a name to be 'taken':
- *      - If the provided user has the same name as another user;
- *      - AND if that user is online;
+ * If the username entered is an User object, it will consider a name to be 'taken': *      - If the provided user has the same name as another user; *      - AND if that user is online;
  *      - AND if that user DOES NOT have the same uniqueUserID as the provided user.
  * @param {User|String} userOrNickname
  * @return {Boolean}
@@ -307,7 +305,7 @@ function checkUsernameTaken(userOrNickname) {
     } else if (userOrNickname instanceof User) {
         let usernameLowercase = userOrNickname.profile.nickname.toLowerCase();
         return registeredUsers.find(function (el) {
-            return ((el.profile.nickname.toLowerCase() === usernameLowercase) && (el.status === 'online') && (el.profile.user_id !== userOrNickname.profile.user_id));
+            return ((el.profile.nickname.toLowerCase() === usernameLowercase) && (el.status === 'online') && (el.profile.userId !== userOrNickname.profile.userId));
         });
     }
 }
@@ -318,7 +316,7 @@ function checkUsernameTaken(userOrNickname) {
  */
 function getUserByToken(decoded_token) {
     return registeredUsers.find(function (user) {
-        return user.profile.user_id === decoded_token.user_id;
+        return user.profile.userId === decoded_token.userId;
     });
 }
 
@@ -346,13 +344,14 @@ function determineMessageLocation(optionName) {
     switch(optionName) {
         case 'magicWordsAdd':
             return 'magicWordInput';
+        case 'magicWordsRemove':
+            return 'magicWordsTable';
         default:
             return 'undefined';
     }
 }
 
-sio.set('authorization', socketioJwt.authorize(
-    {
+sio.set('authorization', socketioJwt.authorize({
         secret: JWT_SECRET,
         handshake: true
     }

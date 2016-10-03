@@ -25,5 +25,9 @@ module.exports = {
 
     panel: function (msg) {
         console.log(`${`[PANEL]`.magenta.bold} ${msg}`);
+    },
+
+    debug: function (msg) {
+        console.log(`${`[DEBUG]`.red.bold} ${msg}`);
     }
 };

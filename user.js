@@ -4,10 +4,10 @@
  */
 
 module.exports = function (decoded_token) {
-	this.profile  = decoded_token;
+	this.profile = decoded_token;
 	this.status = 'offline';
 
 	this.setStatus = function (status) {
 		this.status = status;
 	}
-}
+};

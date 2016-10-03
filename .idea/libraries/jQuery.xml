@@ -3,13 +3,12 @@
     <properties>
       <option name="frameworkName" value="jQuery" />
       <option name="frameworkVersion" value="1.0." />
+      <sourceFilesUrls>
+        <item url="file://$PROJECT_DIR$/jquery-3.1.0.js" />
+      </sourceFilesUrls>
     </properties>
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/static/scripts/jquery-3.1.0.min.js" />
-      <root url="file://$PROJECT_DIR$/static/scripts/bootstrap.min.js" />
-      <root url="file://$PROJECT_DIR$/static/scripts/jquery-ui.min.js" />
-      <root url="file://$PROJECT_DIR$/static/scripts/socket.io-1.4.5.js" />
-      <root url="file://$PROJECT_DIR$/static/scripts/tether.min.js" />
+      <root url="file://$PROJECT_DIR$/jquery-3.1.0.js" />
     </CLASSES>
     <SOURCES />
   </library>

@@ -12,7 +12,7 @@ const MIN_WORDLIST_WORD_LENGTH = 1;
  */
 function writeConfig() {
     "use strict";
-    fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, ' '), (err) => {
+    fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, ' '), (err) =>  {
         if (err) {
             return log.fatal(`Could not write to ${CONFIG_PATH}. ${err}`);
         }
@@ -38,10 +38,10 @@ function validateWordListInsertion(wordListName, value) {
 }
 
 function validateWordListRemoval(wordListName, value) {
-    wordListName = wordListName.slice(0, -7); // Example: magicWordsRemove, blacklistedWordsRemove
+    wordListName = wordListName.slice(0, -6); // Example: magicWordsRemove, blacklistedWordsRemove
 
     if (typeof value !== 'string') {
-        throw new Error('The word must be a string.');
+        throw new Error("The word must be a string.");
     }
     else if (!config[wordListName].includes(value.toLowerCase())) {
         throw new Error(`Word not found in ${wordListName}.`);
@@ -49,29 +49,76 @@ function validateWordListRemoval(wordListName, value) {
     return wordListName;
 }
 
+function setReplyPercentage(optionName, value) {
+    if (value > 100 || value < 0) {
+        throw new Error("Value must be greater than 0 and smaller than 100. Please contact the developer.");
+    } else {
+        config[optionName] = value;
+    }
+}
+
+function setConfigBoolean(optionName, value) {
+    if (typeof value === 'boolean') {
+        config[optionName] = value;
+    } else {
+        throw new Error("Value must be a boolean. Please contact the developer.");
+    }
+}
+
 module.exports = {
 
-    submitDataTypes: ['magicWordsAdd', 'blacklistedWordsAdd'],
+    submitDataTypes: ['magicWordsAdd', 'magicWordsRemove', 'setReplyRate',
+        'setReplyMagic', 'setReplyNick', 'setSpeaking', 'setLearning'],
     /**
      * @param {String} optionName
      * @param {*} value
      */
     setOption(optionName, value) {
-        let trueOptionName = '';
+        let trueOptionName = null;
+        if (typeof value === 'string') {
+            value = value.toLowerCase();
+        }
 
         switch (optionName) {
             case 'magicWordsAdd':
-            case 'blacklistedWordsAdd':
                 trueOptionName = validateWordListInsertion(optionName, value);
 
                 config[trueOptionName].push(value);
-                console.log(config[trueOptionName]);
+                log.debug(config[trueOptionName]);
+                break;
+            case 'magicWordsRemove':
+                trueOptionName = validateWordListRemoval(optionName, value);
+
+                config[trueOptionName].splice(config[trueOptionName].indexOf(value), 1);
+                log.debug(config[trueOptionName]);
+                break;
+            case 'setReplyRate':
+                trueOptionName = 'replyRate';
+                setReplyPercentage(trueOptionName, value);
+                break;
+            case 'setReplyMagic':
+                trueOptionName = 'replyMagic';
+                setReplyPercentage(trueOptionName, value);
+                break;
+            case 'setReplyNick':
+                trueOptionName = 'replyNick';
+                setReplyPercentage(trueOptionName, value);
+                break;
+            case 'setSpeaking':
+                trueOptionName = 'speaking';
+                setConfigBoolean(trueOptionName, value);
+                break;
+            case 'setLearning':
+                trueOptionName = 'learning';
+                setConfigBoolean(trueOptionName, value);
                 break;
             default:
-                throw new Error('Unknown option.');
+                throw new Error('Unknown option. Please contact the developer.');
                 break;
         }
         writeConfig();
+        // option name will be returned so that the server can tell the client which option
+        // will be updated in their browser
         return trueOptionName;
     },
     /**
@@ -144,6 +191,7 @@ try {
     });
 } catch (err) {
     // Config file doesn't exist or is not accessible. Attempt creating a new one.
+    log.warning(`Config ${CONFIG_PATH} not found! Creating a new one. Please edit it and restart this program.`);
     writeConfig();
 }
 

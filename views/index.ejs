@@ -35,9 +35,9 @@
 
 <script>
     function show_warning(message) {
-        $(".warning").fadeOut();
-        $(".warning").html(`<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> ${message}`);
-        $(".warning").fadeIn();
+        $(".warning").fadeOut()
+                .html(`<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> ${message}`)
+                .fadeIn();
     }
 </script>
 
@@ -72,6 +72,7 @@
             $.ajax({
                 type: 'POST',
                 url: '/',
+                dataType: 'json',
                 data: $('#login').serialize(),
                 success: function (res) {
                     if (res.successState) {
@@ -116,6 +117,7 @@
             $.ajax({
                 type: 'POST',
                 url: '/',
+                dataType: 'json',
                 data: $("#makepassword").serialize(),
                 success: function (res) {
                     if (res.successState) {
