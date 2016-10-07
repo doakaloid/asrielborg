@@ -165,7 +165,7 @@ log.notice("Check for updates! They can be found at https://git.io/via60");
 log.notice("AsrielBorg Version 2.0.0 is now loading... This might take a while if your lines file is too big.");
 
 var config = {
-    webpanel: true,
+    webpanel: false,
     port: 10991,                        // The port the panel will run in.
     token: "YOUR TOKEN HERE",           // Discord API Token
 
