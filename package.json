@@ -1,13 +1,29 @@
 {
   "name": "asrielborg.js",
+<<<<<<< HEAD
   "version": "1.0.2",
+=======
+  "version": "2.0.0",
+>>>>>>> dev
   "description": "AsrielBorg for JavaScript",
   "main": "./main.js",
   "dependencies": {
+    "body-parser": "^1.15.2",
+    "client-sessions": "^0.7.0",
     "colors": "^1.1.2",
+    "cookie-parser": "^1.4.3",
     "crypto": "0.0.3",
     "discord.js": "^9.1.0",
+    "ejs": "^2.5.1",
+    "express": "^4.14.0",
     "fs": "0.0.2",
+<<<<<<< HEAD
+=======
+    "jsonwebtoken": "^7.1.9",
+    "nodejs-websocket": "^1.6.0",
+    "socket.io": "^1.4.8",
+    "socketio-jwt": "^4.5.0",
+>>>>>>> dev
     "underscore": "^1.8.3"
   },
   "devDependencies": {},
