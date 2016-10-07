@@ -72,6 +72,13 @@ else {
                 $("#magic-words-table").append(`<tr><td class='magic-word-entry'><span class="word">${word}</span></td></tr>`);
             });
         }
+        if (data.blacklistedWords) {
+            $("#blacklisted-words-table").html("");
+
+            data.blacklistedWords.forEach(function (word) {
+                $("#blacklisted-words-table").append(`<tr><td class='blacklisted-word-entry'><span class="word">${word}</span></td></tr>`);
+            });
+        }
     });
 
     socket.on('updateToken', function (data) {
@@ -110,7 +117,7 @@ else {
     socket.on('submitDataResult', function (data) {
         console.log("submitDataResult: " + JSON.stringify(data));
         switch (data.location) {
-            case 'magicWordInput':
+            case 'magicWordsInput':
                 if (data.success) {
                     $("#magic-word-modal").modal("hide");
                     $("#magic-word-input")
@@ -119,6 +126,20 @@ else {
                 } else {
                     //Show error
                     $("#magic-word-input-error")
+                        .fadeOut()
+                        .html(`<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> ${data.message}`)
+                        .fadeIn();
+                }
+                break;
+            case 'blacklistedWordsInput':
+                if (data.success) {
+                    $("#blacklisted-word-modal").modal("hide");
+                    $("#blacklisted-word-input")
+                        .val("");
+                    $("#blacklisted-word-input-error").fadeOut();
+                } else {
+                    //Show error
+                    $("#blacklisted-word-input-error")
                         .fadeOut()
                         .html(`<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> ${data.message}`)
                         .fadeIn();

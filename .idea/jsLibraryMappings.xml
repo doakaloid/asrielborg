@@ -3,6 +3,7 @@
   <component name="JavaScriptLibraryMappings">
     <file url="PROJECT" libraries="{jQuery, jQuery UI}" />
     <includedPredefinedLibrary name="ECMAScript 6" />
+    <includedPredefinedLibrary name="Node.js Core" />
     <includedPredefinedLibrary name="asrielborg/node_modules" />
   </component>
 </project>

@@ -32,31 +32,25 @@ var sio = socketIo.listen(server);
  * If a file is not found at the path, a new one will be created.
  * If the program has no access to the path, it will shut down.
  */
-function load_password() {
-    "use strict";
-
+function loadPassword() {
     let passwordHash = '';
-    try {
-        fs.accessSync(PASSWORD_PATH, fs.FS_OK);
-        fs.readFile(PASSWORD_PATH, (err, data) => {
-            if (err) {
-                throw err;
-            }
-            log.notice('Loaded password successfully.');
 
-            if (data.toString() === '') {
-                log.warning(`Please go to http://127.0.0.1:${port}/ to set your password.`)
-            }
-            passwordHash = data.toString();
-        });
+    try {
+        let data = fs.readFileSync(PASSWORD_PATH, 'utf-8');
+
+        if (data === '') {
+            log.warning(`Please go to http://127.0.0.1:${port}/ to set your password. If you do not set this, anyone will be able to set your password and control your bot.`);
+        } else {
+            log.notice('Loaded password successfully.');
+        }
+        passwordHash = data;
     }
     catch (err) {
         fs.writeFile(PASSWORD_PATH, '', (err) => {
             if (err) {
-                log.error(`Could not write to ${PASSWORD_PATH}. Please check your permissions and try again.`);
-                throw err;
+                throw new Error(`Could not write to ${PASSWORD_PATH}. Please check your permissions and try again.`);
             }
-            log.notice(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`);
+            log.warning(`Created a blank password file due to non-existing password. Please go to http://127.0.0.1:${port}/ to set your password.`);
         });
     }
     return passwordHash;
@@ -85,7 +79,6 @@ function checkAuth(req, res, next) {
 }
 
 module.exports = {
-
     /**
      * @param {Number} user_port - Any integer between 1 and 65535.
      */
@@ -95,7 +88,7 @@ module.exports = {
         if (user_port !== "undefined") {
             port = user_port;
         }
-        this.serverPasswordHash = load_password();
+        this.serverPasswordHash = loadPassword();
 
         app.set('view engine', 'ejs');
 
@@ -113,7 +106,7 @@ module.exports = {
             } else {
                 res.render('index.ejs', {
                     passwordSet: (this.serverPasswordHash !== ''),
-                    successState: true,
+                    successState: null,
                     message: '',
                 });
             }
@@ -121,7 +114,7 @@ module.exports = {
 
         app.post('/', (req, res) => {
             //User is setting a new password
-            if (typeof req.body.new_password === 'string') { //TODO: FIX VARIABLE NAME
+            if (typeof req.body.new_password === 'string') {
                 let insertedNewPassword = req.body.new_password;
 
                 let success = false;
@@ -144,6 +137,7 @@ module.exports = {
                         .update(insertedNewPassword)
                         .digest('hex');
                 }
+                writePasswordFile(this.serverPasswordHash);
                 res.send({
                     successState: success,
                     message: responseMessage
@@ -343,9 +337,13 @@ function updateAllClientsPanel(settings) {
 function determineMessageLocation(optionName) {
     switch(optionName) {
         case 'magicWordsAdd':
-            return 'magicWordInput';
+            return 'magicWordsInput';
         case 'magicWordsRemove':
             return 'magicWordsTable';
+        case 'blacklistedWordsAdd':
+            return 'blacklistedWordsInput';
+        case 'blacklistedWordsRemove':
+            return 'blacklistedWordsTable';
         default:
             return 'undefined';
     }

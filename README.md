@@ -7,7 +7,7 @@ AsrielBorg is a clone of SeeBorg, an IRC (Internet Relay Chat) bot created by Eu
    2. Create a Discord bot. (Guide: https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token)
    3. Edit the ```token``` field in ```config.json``` and insert the token for your bot.
    4. Run the bot with the command ```node main.js```.
-   5. Access your webpanel to set a password, **otherwise anyone else will be able to set it.**
+   5. If you do enable the webpanel, access http://127.0.0.1:```port``` to set a password, **otherwise anyone else will be able to set it.**
 
 ### Credits
    - Eugene Bujak, for creating the first SeeBorg

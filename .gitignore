@@ -2,3 +2,7 @@ config.json
 serverPasswordHash
 lines.txt
 node_modules/
+jquery-3.1.0.js
+jquery-ui.js
+.main.js.swp
+
