@@ -165,7 +165,7 @@ log.notice("Check for updates! They can be found at https://git.io/via60");
 log.notice("AsrielBorg Version 2.0.0 is now loading... This might take a while if your lines file is too big.");
 
 var config = {
-    webpanel: false,
+    webpanel: true,
     port: 10991,                        // The port the panel will run in.
     token: "YOUR TOKEN HERE",           // Discord API Token
 
@@ -174,12 +174,14 @@ var config = {
     replyMagic: 10.0,                   // The chance that the bot will reply when a magic word is said, in percent.
 
     speaking: true,                     // Whether the bot is speaking or not.
+    learningFromBots: false,            // Whether the bot will learn from other bots.
     learning: true,                     // Whether the bot is learning or not.
 
     autoSavePeriod: 200,                // Auto save period (in seconds)
 
     magicWords: ["a trigger", "another trigger"], // The list of magic words the bot will reply to (separated by spaces)
-    blacklistedWords: ["very bad word", "another bad word"]  // The list of words that will make the bot not learn a sentence if it contains one of these words
+    blacklistedWords: ["very bad word", "another bad word"], // The list of words that will make the bot not learn a sentence if it contains one of these words
+    blockedUsers: ['118918421864906755'] // Very bad users.
 };
 
 // Does a config file already exist? Attempting to load from CONFIG_PATH.
@@ -234,6 +236,9 @@ function validateConfig(data) {
     if (typeof data.speaking !== 'boolean') {
         throw new Error("Invalid 'speaking' value! It must be a boolean.");
     }
+    if (typeof data.learningFromBots !== 'boolean') {
+        throw new Error("Invalid 'learningFromBots' value! It must be a boolean.");
+    }
     if (typeof data.learning !== 'boolean') {
         throw new Error("Invalid 'learning' value! It must be a boolean.");
     }
@@ -244,10 +249,16 @@ function validateConfig(data) {
         throw new Error("Invalid 'magicWords' value! It must be an array containing strings.");
     }
     if (data.magicWords.find((el) => typeof el !== 'string') !== undefined) {
-        throw new Error("All words in 'magicWords' must be strings.");
+        throw new Error("All elements in 'magicWords' must be strings.");
     }
     if (data.blacklistedWords.find((el) => typeof el !== 'string') !== undefined) {
-        throw new Error("All words in 'blacklistedWords' must be strings.");
+        throw new Error("All elements in 'blacklistedWords' must be strings.");
+    }
+    if (!(data.blockedUsers instanceof Array)) {
+        throw new Error("Invalid 'blockedUsers' value! It must be an array.");
+    }
+    if (data.blockedUsers.find((el) => typeof el !== 'string') !== undefined) {
+        throw new Error("All elements in 'blockedUsers must be strings.");
     }
 
     data.magicWords.forEach( (obj, i) => {
@@ -315,13 +326,15 @@ function connect() {
 
     bot.on("message", (discordMessage) => {
         log.message(discordMessage.author, discordMessage.channel, discordMessage.content);
-        if (discordMessage.author !== bot.user) {
+        if (discordMessage.author.id !== bot.user.id) {
             processMessage(discordMessage);
         }
     });
 
     bot.on("messageDelete", (discordMessage) => {
-        discordMessage.channel.sendMessage(`${discordMessage.author}: i know what you did`);
+        if (discordMessage.author.id !== bot.user.id) {
+            discordMessage.channel.sendMessage(`${discordMessage.author}: i know what you did`);
+        }
     });
 
     setInterval(saveLinesFile, config.autoSavePeriod * 1000);
@@ -334,18 +347,24 @@ function connect() {
 function processMessage(discordMessage) {
     let messageString = discordMessage.content.toLowerCase();  // Stores the contents of the messageString object in a string variable.
 
+    if (userIsBlocked(discordMessage.author.id)) {
+        return;
+    }
+
     if (config.learning) {
-        learn(messageString);
+        if (discordMessage.author.bot) {
+            if (config.learningFromBots) {
+                learn(messageString);
+            }
+        } else {
+            learn(messageString);
+        }
     }
 
     if (config.speaking) {
-        let words = extractWords(messageString);
-
         if (config.speaking) {
-            /**
-             * containsMagic is an anonymous function that will return true if the messageString
-             * contains any of the words inside config.magicWords. Not case sensitive.
-             */
+             // containsMagic is an anonymous function that will return true if the messageString
+             // contains any of the words inside config.magicWords. Not case sensitive.
             let containsMagic = function () {
                 return config.magicWords.find((entry) => messageString.includes(entry));
             };
@@ -513,4 +532,14 @@ function escapeRegex(str) {
  */
 function extractWords(line) {
     return line.split(/[.!,;:()?\ ]/);
+}
+
+/**
+ * Returns whether the user ID specified is blocked.
+ * @param id {string}
+ * @returns {boolean} Is user is blocked?
+ */
+function userIsBlocked(id) {
+    let blocked = config.blockedUsers.find((el) => el === id);
+    return blocked !== undefined;
 }
