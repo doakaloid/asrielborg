@@ -143,7 +143,8 @@ module.exports = {
             autoSavePeriod: config.autoSavePeriod,
 
             magicWords: config.magicWords,
-            blacklistedWords: config.blacklistedWords
+            blacklistedWords: config.blacklistedWords,
+            blacklistedUsers: config.blacklistedUsers
         };
     },
     save_config: writeConfig,
@@ -157,14 +158,14 @@ const server = require('./server');
 const CONFIG_PATH = './config.json';
 const LINES_PATH = './lines.txt';
 
-var linesDictionary = [];
-var wordsDictionary = [];
-var bot;
+let linesDictionary = [];
+let wordsDictionary = [];
+let bot;
 
 log.notice("Check for updates! They can be found at https://git.io/via60");
 log.notice("AsrielBorg Version 2.0.0 is now loading... This might take a while if your lines file is too big.");
 
-var config = {
+let config = {
     webpanel: false,
     port: 10991,                        // The port the panel will run in.
     token: "YOUR TOKEN HERE",           // Discord API Token
@@ -179,7 +180,8 @@ var config = {
     autoSavePeriod: 200,                // Auto save period (in seconds)
 
     magicWords: ["a trigger", "another trigger"], // The list of magic words the bot will reply to (separated by spaces)
-    blacklistedWords: ["very bad word", "another bad word"]  // The list of words that will make the bot not learn a sentence if it contains one of these words
+    blacklistedWords: ["very bad word", "another bad word"],  // The list of words that will make the bot not learn a sentence if it contains one of these words
+    blacklistedUsers: ["256936870607454225"] // ID of the users to blacklist
 };
 
 // Does a config file already exist? Attempting to load from CONFIG_PATH.
@@ -339,9 +341,9 @@ function processMessage(discordMessage) {
     }
 
     if (config.speaking) {
-        let words = extractWords(messageString);
+        if (!config.blacklistedUsers.find((discordMessage.author.id))) {
+            let words = extractWords(messageString);
 
-        if (config.speaking) {
             /**
              * containsMagic is an anonymous function that will return true if the messageString
              * contains any of the words inside config.magicWords. Not case sensitive.
