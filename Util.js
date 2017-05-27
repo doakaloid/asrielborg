@@ -33,5 +33,17 @@ module.exports = {
 
         // Split at line breaks and periods
         return new Set( str_.split(/\n+|\.\s+/) );
+    },
+
+    /**
+     * Actually throws an error if the int is NaN
+     * @param {String} str
+     */
+    parseInt: function(str)
+    {
+        const num = parseInt(str);
+        if (isNaN(num))
+            throw new Error('invalid number specified');
+        return num;
     }
 };

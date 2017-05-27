@@ -19,6 +19,8 @@ class AsrielBorg
         this.config = config;
         this.dictionary = new Dictionary(config);
         this.connect();
+
+        this.client.on('message', this.onMessage.bind(this));
     }
 
     connect()
@@ -34,7 +36,6 @@ class AsrielBorg
         this.client.login(this.config.token).then(() =>
         {
             logger.log('info', 'AsrielBorg is connected and ready!');
-            this.addListeners();
         }).catch((err) =>
         {
             logger.log('error',
@@ -43,37 +44,39 @@ class AsrielBorg
         });
     }
 
-    addListeners()
+    /**
+     * @param {Message} message
+     */
+    onMessage(message)
     {
-        this.client.on('message', (message) =>
+        logger.log('info', '[%s]: %s', message.author.username,
+            message.content);
+
+        if (message.author === this.client.user)
+            return;
+
+        if (this.config.admins.includes(message.author.id))
         {
-            logger.log('info', '[%s]: %s', message.author.username,
-                message.content);
-
-            if (message.author === this.client.user)
-                return;
-
-            if (message.author.id in this.config.admins)
+            if (message.isMentioned(this.client.user)
+                && message.content.startsWith(';'))
             {
-                if (message.content.startsWith(this.config.prefix))
-                {
-                    return;
-                }
+                this.admin(message);
+                return;
             }
+        }
 
-            if (this.config.ignoredUsers.includes(message.author.id))
-                return;
+        if (this.config.ignoredUsers.includes(message.author.id))
+            return;
 
-            if (!this.config.speaking)
-                return;
+        if (!this.config.speaking)
+            return;
 
-            if (this.config.learning)
-                this.dictionary.learn(message.content);
+        if (this.config.learning)
+            this.dictionary.learn(message.content);
 
-            const willReply = this.getWillReply(message);
-            if (willReply)
-                this.reply(message);
-        });
+        const willReply = this.getWillReply(message);
+        if (willReply)
+            this.reply(message);
     }
 
     /**
@@ -154,6 +157,114 @@ class AsrielBorg
             .catch(err => {
                 logger.log('debug', 'Error while sending msg: %s', err);
             });
+    }
+
+    /**
+     * The function that handles admin commands
+     * @param {Message} message Containing the admin command
+     */
+    admin(message)
+    {
+        const input = message.content.split(' ');
+
+        if (input.length < 3)
+            return;
+
+        const command = input[2];
+        const args = input.length === 3
+            ? []
+            : input.splice(3);
+
+        switch (command)
+        {
+            case 'set':
+                if (args.length !== 2)
+                {
+                    message.reply('Usage: set [property] [value]');
+                    return;
+                }
+                const prop = args[0];
+                const value = args[1];
+
+                try {
+                    this.setProperty(prop, value);
+                } catch (err) {
+                    message.reply(err.message);
+                }
+                break;
+            case 'known':
+                if (args.length !== 1)
+                {
+                    message.reply('Usage: known [word]');
+                    return;
+                }
+
+                const occurrences = this.dictionary
+                        .getAllLinesContaining(args[0])
+                        .length;
+
+                message.reply('The word ' + args[0] + ' shows up '
+                    + occurrences + ' times in my vocabulary.');
+                break;
+            case 'forget':
+                if (args.length !== 1)
+                {
+                    message.reply('Usage: forget [word]');
+                    return;
+                }
+
+                const forgottenAmount = this.dictionary.forget(args[0]);
+
+                message.reply('I forgot ' + forgottenAmount + ' contexts' +
+                    ' containing ' + args[0] + '.');
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Tries to set a property in this bot's config
+     * @param {String} prop
+     * @param {String} value
+     */
+    setProperty(prop, value)
+    {
+        switch (prop)
+        {
+            case 'replyrate':
+                this.config.setReplyRate( Util.parseInt(value) );
+                break;
+
+            case 'replynick':
+                this.config.setReplyNick( Util.parseInt(value));
+                break;
+
+            case 'replymagic':
+                this.config.setReplyMagic( Util.parseInt(value) );
+                break;
+
+            case 'speaking':
+                if (value !== 'true' || value !== 'false')
+                    throw new Error('value must be either true or false');
+                this.config.setSpeaking(value === 'true');
+                break;
+
+            case 'learning':
+                if (value !== 'true' || value !== 'false')
+                    throw new Error('value must be either true or false');
+                this.config.setLearning(value === 'true');
+                break;
+
+            case 'autosaveperiod':
+                this.config.setAutoSavePeriod( Util.parseInt(value) );
+                break;
+
+            default:
+                throw new Error('invalid property specified. Valid' +
+                    ' properties are: replyrate, replynick, replymagic,' +
+                    ' speaking, learning, autosaveperiod');
+        }
     }
 }
 

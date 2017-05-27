@@ -97,14 +97,12 @@ class Dictionary
     }
 
     /**
-     * @private
+     * Returns all the lines containing the specified word.
      * @param {String} word
-     * @return {String} A random line containing the specified word
+     * @returns {Array}
      */
-    getRandomLineContaining(word)
+    getAllLinesContaining(word)
     {
-        word = Util.escapeRegex(word);
-
         const linesContainingWord = [];
         const pattern = new RegExp('\\b' + word + '\\b', 'gi');
 
@@ -116,12 +114,26 @@ class Dictionary
             }
         }
 
-        if (linesContainingWord.length === 0)
+        return linesContainingWord;
+    }
+
+    /**
+     * @private
+     * @param {String} word
+     * @return {String} A random line containing the specified word
+     */
+    getRandomLineContaining(word)
+    {
+        word = Util.escapeRegex(word);
+
+        const li = this.getAllLinesContaining(word);
+
+        if (li.length === 0)
             return '';
 
-        return linesContainingWord.length === 1
-            ? linesContainingWord[0]
-            : _.sample(linesContainingWord);
+        return li.length === 1
+            ? li[0]
+            : _.sample(li);
     }
 
     /**
@@ -166,6 +178,28 @@ class Dictionary
 
         for (let w of words)
             this.words.add(w);
+    }
+
+    /**
+     * Permanently forgets specified word
+     * @param word
+     * @return {Number} the amount of forgotten lines
+     */
+    forget(word)
+    {
+        const pattern =
+            new RegExp('\\b' + Util.escapeRegex(word) + '\\b', 'gi');
+
+        let forgottenAmount = 0;
+        for (let line of this.lines)
+        {
+            if (line.match(pattern))
+            {
+                this.lines.delete(line);
+                forgottenAmount++;
+            }
+        }
+        return forgottenAmount;
     }
 }
 

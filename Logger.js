@@ -9,7 +9,7 @@ const logger = new (winston.Logger)({
                 return new Date().toLocaleString();
             },
             colorize: true,
-            level: 'debug'
+            level: 'info'
         }),
         new (winston.transports.File)({
             filename: 'asriel.log',
