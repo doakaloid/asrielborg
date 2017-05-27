@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3625425d-c0d2-4424-993f-88a4e08ec446" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Start.js" afterPath="$PROJECT_DIR$/Start.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/asriel.log" afterPath="$PROJECT_DIR$/asriel.log" />
-    </list>
+    <list default="true" id="3625425d-c0d2-4424-993f-88a4e08ec446" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -770,12 +766,12 @@
       <workItem from="1495825624640" duration="536000" />
       <workItem from="1495826174203" duration="8498000" />
       <workItem from="1495887275076" duration="12386000" />
-      <workItem from="1495912335783" duration="58000" />
+      <workItem from="1495912335783" duration="78000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="21478000" />
+    <option name="totallyTimeSpent" value="21498000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
