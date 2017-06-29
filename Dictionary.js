@@ -6,38 +6,31 @@ const logger = require('./Logger');
 
 const linesPath = 'lines.txt';
 
-class Dictionary
-{
+class Dictionary {
     /**
      * @param {Config} config
      * @property {Set.<String>} lines Lines known
      * @property {Set.<String>} words Words known
      */
-    constructor(config)
-    {
+    constructor(config) {
         this.config = config;
         this.load();
-        setInterval(this.save.bind(this), this.config.autoSavePeriod * 1000);
+        setInterval(this.save.bind(this), this.config.getAutoSavePeriod() * 1000);
     }
 
-    load()
-    {
+    load() {
         let data;
-        try
-        {
+        try {
             data = fs.readFileSync(linesPath, 'utf8');
         }
-        catch (err)
-        {
-            if (err.code === 'ENOENT')
-            {
+        catch (err) {
+            if (err.code === 'ENOENT') {
                 logger.log('warn', 'No lines.txt file found. If this is a' +
                     ' fresh install, that\'s fine.');
                 this.lines = new Set();
                 return;
             }
-            else
-            {
+            else {
                 throw err;
             }
         }
@@ -46,26 +39,23 @@ class Dictionary
 
         this.lines = Util.splitSentences(lines);
 
-        this.words = new Set( Util.splitWords(lines) );
+        this.words = new Set(Util.splitWords(lines));
 
         logger.log('info',
             'Done loading! I know ' + this.lines.size + ' lines' +
             ' and ' + this.words.size + ' unique words.');
     }
 
-    save()
-    {
+    save() {
         let data = '';
 
-        for (let line of this.lines)
-        {
+        for (let line of this.lines) {
             const sentences = Util.splitSentences(line);
             for (let sentence of sentences)
                 data += sentence + '\n';
         }
 
-        fs.writeFile(linesPath, data, (err) =>
-        {
+        fs.writeFile(linesPath, data, (err) => {
             if (err) throw err;
             logger.log('info', 'Saved dictionary!');
         });
@@ -76,8 +66,7 @@ class Dictionary
      * @param word Word to look up
      * @return {Boolean}
      */
-    knows(word)
-    {
+    knows(word) {
         return this.words.has(word);
     }
 
@@ -85,11 +74,9 @@ class Dictionary
      * Returns the words that the bot knows from the line
      * @param {Set.<String>} words Words to look up
      */
-    getKnownWords(words)
-    {
+    getKnownWords(words) {
         let known = new Set();
-        for (let word of words)
-        {
+        for (let word of words) {
             if (this.knows(word))
                 known.add(word);
         }
@@ -101,15 +88,12 @@ class Dictionary
      * @param {String} word
      * @returns {Array}
      */
-    getAllLinesContaining(word)
-    {
+    getAllLinesContaining(word) {
         const linesContainingWord = [];
         const pattern = new RegExp('\\b' + word + '\\b', 'gi');
 
-        for (let str of this.lines)
-        {
-            if ( str.match(pattern) )
-            {
+        for (let str of this.lines) {
+            if (str.match(pattern)) {
                 linesContainingWord.push(str);
             }
         }
@@ -122,8 +106,7 @@ class Dictionary
      * @param {String} word
      * @return {String} A random line containing the specified word
      */
-    getRandomLineContaining(word)
-    {
+    getRandomLineContaining(word) {
         word = Util.escapeRegex(word);
 
         const li = this.getAllLinesContaining(word);
@@ -141,12 +124,11 @@ class Dictionary
      * @param {String} word Word to build around
      * @return {String} The finished sentence
      */
-    buildAround(word)
-    {
+    buildAround(word) {
         let leftSide = this.getRandomLineContaining(word);
         let rightSide = this.getRandomLineContaining(word);
 
-        const pattern = new RegExp('\\b' + word + '\\b', 'gi');
+        const pattern = new RegExp('\\b' + Util.escapeRegex(word) + '\\b', 'gi');
 
         leftSide = leftSide.split(pattern)[0];
         rightSide = rightSide
@@ -161,13 +143,11 @@ class Dictionary
      * Learns given string
      * @param {String} str Line to learn
      */
-    learn(str)
-    {
+    learn(str) {
         const sentences = Util.splitSentences(str);
         const words = Array.from(Util.splitWords(str));
 
-        if (_.intersection(words, this.config.blacklistedWords).length !== 0)
-        {
+        if (_.intersection(words, this.config.getBlacklistedWords()).length !== 0) {
             logger.log('debug', '\"%s\" contains a blacklisted word.' +
                 ' Refusing to learn.', str);
             return;
@@ -185,16 +165,13 @@ class Dictionary
      * @param word
      * @return {Number} the amount of forgotten lines
      */
-    forget(word)
-    {
+    forget(word) {
         const pattern =
             new RegExp('\\b' + Util.escapeRegex(word) + '\\b', 'gi');
 
         let forgottenAmount = 0;
-        for (let line of this.lines)
-        {
-            if (line.match(pattern))
-            {
+        for (let line of this.lines) {
+            if (line.match(pattern)) {
                 this.lines.delete(line);
                 forgottenAmount++;
             }

@@ -1,59 +1,52 @@
 const fs = require('fs');
 
-class Config
-{
-    /**
-     * @property {String} token Token used to log in
-     * @property {Number} replyRate Bot reply rate to any given line, in percent
-     * @property {Number} replyNick Bot reply rate to mention, in percent
-     * @property {Number} replyMagic Bot reply rate to magic word, in percent
-     * @property {Boolean} speaking Bot can speak if true
-     * @property {Boolean} learning Bot learns new words if true
-     * @property {Number} autoSavePeriod Interval in seconds in which to save the
-     * dictionary
-     * @property {Array.<String>} magicWords Magic words
-     * @property {Array.<String>} blacklistedWords Words the bot will not learn
-     * @property {Array.<String>} admins ID of the users who can control the bot
-     * @property {Array.<String>} ignoredUsers ID of the users who will be
-     * ignored by the bot
-     */
-    constructor()
-    {
-        this.token = '';
-        this.replyRate = 100;
-        this.replyNick = 100;
-        this.replyMagic = 100;
-        this.speaking = true;
-        this.learning = true;
-        this.autoSavePeriod = 200;
-        this.magicWords = ['magic', 'words'];
-        this.blacklistedWords = ['bad word'];
-        this.admins = ['316431277668433920'];
-        this.ignoredUsers = [];
-    }
+/**
+ * @typedef {Object} ConfigProperties
+ * @type {Object}
+ * @property {String} token Token used to log in
+ * @property {Number} replyRate Reply rate to any given line, in percent
+ * @property {Number} replyNick Reply rate to a mention, in percent
+ * @property {Number} replyMagic Reply rate to a magic word, in percent
+ * @property {Boolean} speaking If true, bot can speak
+ * @property {Boolean} learning If true, bot will learn new words
+ * @property {Boolean} pingUsers If true, bot will ping users
+ * @property {Number} autoSavePeriod Interval in seconds in which to save the dictionary
+ * @property {Array.<String>} magicWords List of magic words
+ * @property {Array.<String>} blacklistedWords Words to not be learned
+ * @property {Array.<String>} admins User IDs of the people who can control
+ * @property {Array.<String>} ignoredUsers User IDs of the people who will be ignored
+ * @property {Array.<String>} usernameAliases Other names the bot is known by
+ */
 
-    write(path)
-    {
-        const json = {
-            token: this.token,
-            replyRate: this.replyRate,
-            replyNick: this.replyNick,
-            replyMagic: this.replyMagic,
-            speaking: this.speaking,
-            learning: this.learning,
-            autoSavePeriod: this.autoSavePeriod,
-            magicWords: this.magicWords,
-            blacklistedWords: this.blacklistedWords,
-            admins: this.admins,
-            ignoredUsers: this.ignoredUsers
+class Config {
+    constructor() {
+        /**
+         * @type {ConfigProperties}
+         * @private
+         */
+        this.properties = {
+            token: '',
+            replyRate: 100,
+            replyNick: 100,
+            replyMagic: 100,
+            speaking: true,
+            learning: true,
+            pingUsers: false,
+            autoSavePeriod: 200,
+            magicWords: ['magic', 'words'],
+            blacklistedWords: ['dinosaurs'],
+            admins: ['316431277668433920'],
+            ignoredUsers: [],
+            usernameAliases: ['asriel'],
         };
-
-        fs.writeFileSync( path, JSON.stringify(json, null, ' ') );
     }
 
-    load(path)
-    {
-        const data = JSON.parse( fs.readFileSync(path) );
+    write(path) {
+        fs.writeFileSync(path, JSON.stringify(this.properties, null, ' '));
+    }
+
+    load(path) {
+        const data = JSON.parse(fs.readFileSync(path));
 
         this.setToken(data.token);
         this.setReplyRate(data.replyRate);
@@ -61,113 +54,138 @@ class Config
         this.setReplyMagic(data.replyMagic);
         this.setSpeaking(data.speaking);
         this.setLearning(data.learning);
+        this.setPingUsers(data.pingUsers);
         this.setAutoSavePeriod(data.autoSavePeriod);
         this.setMagicWords(data.magicWords);
         this.setBlacklistedWords(data.blacklistedWords);
         this.setAdmins(data.admins);
         this.setIgnoredUsers(data.ignoredUsers);
+        this.setUsernameAliases(data.usernameAliases);
     }
 
-    setToken(t)
-    {
+    setToken(t) {
         if (typeof t !== 'string')
             throw new Error('\'token\' must be a string');
 
-        this.token = t;
+        this.properties.token = t;
     }
 
-    setReplyRate(r)
-    {
+    setReplyRate(r) {
         if (typeof r !== 'number')
             throw new Error('\'replyRate\' must be a Number');
 
         if (r < 0 || r > 100)
             throw new Error('\'replyRate\' must be in between 0 and 100');
 
-        this.replyRate = r;
+        this.properties.replyRate = r;
     }
 
-    setReplyNick(r)
-    {
+    setReplyNick(r) {
         if (typeof r !== 'number')
             throw new Error('\'replyNick\' must be a Number');
 
         if (r < 0 || r > 100)
             throw new Error('\'replyNick\' must be in between 0 and 100');
 
-        this.replyNick = r;
+        this.properties.replyNick = r;
     }
 
-    setReplyMagic(r)
-    {
+    setReplyMagic(r) {
         if (typeof r !== 'number')
             throw new Error('\'replyMagic\' must be a Number');
 
         if (r < 0 || r > 100)
             throw new Error('\'replyMagic\' must be in between 0 and 100');
 
-        this.replyMagic = r;
+        this.properties.replyMagic = r;
     }
 
-    setSpeaking(s)
-    {
+    setSpeaking(s) {
         if (typeof s !== 'boolean')
             throw new Error('\'speaking\' must be either \'true\' or \'false\'');
 
-        this.speaking = s;
+        this.properties.speaking = s;
     }
 
-    setLearning(l)
-    {
+    setLearning(l) {
         if (typeof l !== 'boolean')
             throw new Error('\'learning\' must be either \'true\' or \'false\'');
 
-        this.learning = l;
+        this.properties.learning = l;
     }
 
-    setAutoSavePeriod(a)
-    {
+    setPingUsers(p) {
+        if (typeof p !== 'boolean')
+            throw new Error('\'pingUsers\' must be either \'true\' or \'false\'');
+
+        this.properties.pingUsers = p;
+    }
+
+    setAutoSavePeriod(a) {
         if (typeof a !== 'number')
             throw new Error('\'autoSavePeriod must be a Number');
 
         if (a < 0)
             throw new Error('\'autoSavePeriod\' cannot be a negative number');
 
-        this.autoSavePeriod = a;
+        this.properties.autoSavePeriod = a;
     }
 
-    setMagicWords(m)
-    {
+    setMagicWords(m) {
         if (!(m instanceof Array))
             throw new Error('\'magicWords\' must be an array');
 
-        this.magicWords = m;
+        const lowercaseMagicWords = m.map(str => str.toLowerCase());
+
+        this.properties.magicWords = lowercaseMagicWords;
     }
 
-    setBlacklistedWords(b)
-    {
+    setBlacklistedWords(b) {
         if (!(b instanceof Array))
             throw new Error('\'blacklistedWords\' must be an array');
 
-        this.blacklistedWords = b;
+        const lowerCaseBlacklistedWords = b.map(str => str.toLowerCase());
+
+        this.properties.blacklistedWords = lowerCaseBlacklistedWords;
     }
 
-    setAdmins(a)
-    {
+    setAdmins(a) {
         if (!(a instanceof Array))
             throw new Error('\'admins\' must be an array');
 
-        this.admins = a;
+        this.properties.admins = a;
     }
 
-    setIgnoredUsers(ig)
-    {
-        if (!(ig instanceof Array))
-        {
+    setIgnoredUsers(ig) {
+        if (!(ig instanceof Array)) {
             throw new Error('\'ignoredUsers\' must be an array');
         }
-        this.ignoredUsers = ig;
+        this.properties.ignoredUsers = ig;
     }
+
+    setUsernameAliases(ua) {
+        if (!(ua instanceof Array)) {
+            throw new Error('\'usernameAliases\' must be an array');
+        }
+
+        const lowerCaseUsernameAliases = ua.map(str => str.toLowerCase());
+
+        this.properties.usernameAliases = lowerCaseUsernameAliases;
+    }
+
+    getToken() { return this.properties.token; }
+    getReplyRate() { return this.properties.replyRate; }
+    getReplyNick() { return this.properties.replyNick; }
+    getReplyMagic() { return this.properties.replyMagic; }
+    getSpeaking() { return this.properties.speaking; }
+    getLearning() { return this.properties.learning; }
+    getPingUsers() { return this.properties.pingUsers; }
+    getAutoSavePeriod() { return this.properties.autoSavePeriod; }
+    getMagicWords() { return this.properties.magicWords.slice(); }
+    getBlacklistedWords() { return this.properties.blacklistedWords.slice(); }
+    getAdmins() { return this.properties.admins.slice(); }
+    getIgnoredUsers() { return this.properties.ignoredUsers.slice(); }
+    getUsernameAliases() { return this.properties.usernameAliases.slice(); }
 }
 
 module.exports = Config;

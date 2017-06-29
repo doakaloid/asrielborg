@@ -4,12 +4,11 @@ const winston = require('winston');
 const logger = new (winston.Logger)({
     transports: [
         new (winston.transports.Console)({
-            timestamp: () =>
-            {
+            timestamp: () => {
                 return new Date().toLocaleString();
             },
             colorize: true,
-            level: 'info'
+            level: 'debug'
         }),
         new (winston.transports.File)({
             filename: 'asriel.log',
