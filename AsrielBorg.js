@@ -278,12 +278,15 @@ class AsrielBorg {
      */
     hasUsernameMention(str) {
         const words = Util.splitWords(str.toLowerCase());
+		
+		// Check if any words match any username aliases.
         const intersection = _.intersection(Array.from(words), this.config.getUsernameAliases());
 
         if (intersection.length > 0) {
             return true;
         }
         else {
+			// Now check if anything in the string matches the Discord username.
             return str.toLowerCase().includes(this.client.user.username.toLowerCase());
         }
     }

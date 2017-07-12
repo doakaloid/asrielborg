@@ -14,6 +14,8 @@ class Dictionary {
      */
     constructor(config) {
         this.config = config;
+		this.lines = new Set();
+		this.words = new Set();
         this.load();
         setInterval(this.save.bind(this), this.config.getAutoSavePeriod() * 1000);
     }
@@ -36,9 +38,7 @@ class Dictionary {
         }
 
         const lines = data.toLowerCase();
-
         this.lines = Util.splitSentences(lines);
-
         this.words = new Set(Util.splitWords(lines));
 
         logger.log('info',

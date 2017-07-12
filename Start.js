@@ -15,7 +15,7 @@ try {
     logger.log('info', 'Loading ' + configPath + '...');
     config.load(configPath);
 
-    logger.log('info', 'Starting Asrielborg-3... Version 3.2.0');
+    logger.log('info', 'Starting Asrielborg-3... Version 3.2.1');
     new AsrielBorg(config);
 }
 catch (err) {

@@ -5,7 +5,7 @@ module.exports = {
      * @return {Set.<String>} Words in this array
      */
     splitWords: function (str) {
-        const words = new Set(str.split( /[.!,;:()? ]/ )); //TODO: Actually support pinging people with nicknames
+        const words = new Set(str.split( /[.!,;:()? ]/ )); //TODO: Actually support pinging people with server-specific nicknames
         words.delete('');
         return words;
     },
